@@ -5,6 +5,7 @@ import { createModel } from "../utils/model";
 import { createDiscordHistoryTool } from "../tools/discord";
 import { createLinearTool } from "./linear";
 import { createNotionTool } from "./notion";
+import { webSearch } from "@exalabs/ai-sdk";
 
 const systemPromptPath = join(import.meta.dir, "../prompts/agent/SYSTEM.md");
 
@@ -29,6 +30,7 @@ export async function createAgent(message: Message) {
       linear: createLinearTool(userId),
       notion: createNotionTool(userId),
       discord_history: createDiscordHistoryTool(message),
+      web_search: webSearch(),
     },
     stopWhen: stepCountIs(10),
   });

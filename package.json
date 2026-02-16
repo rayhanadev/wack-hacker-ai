@@ -21,6 +21,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@exalabs/ai-sdk": "^1.0.5",
     "@linear/sdk": "^75.0.0",
     "@notionhq/client": "^5.9.0",
     "@supermemory/tools": "^1.4.0",
