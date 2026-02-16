@@ -1,0 +1,33 @@
+{
+  "name": "ai-bot",
+  "version": "0.1.0",
+  "devDependencies": {
+    "@factory/eslint-plugin": "latest",
+    "@types/bun": "latest",
+    "@types/marked": "^6.0.0",
+    "eslint": "latest",
+    "oxfmt": "latest",
+    "oxlint": "latest",
+    "oxlint-tsgolint": "latest",
+    "typescript": "^5"
+  },
+  "private": true,
+  "scripts": {
+    "dev": "bun src/index.ts",
+    "start": "bun src/index.ts",
+    "lint": "oxlint --type-aware",
+    "format": "oxfmt",
+    "typecheck": "tsc --noEmit"
+  },
+  "type": "module",
+  "dependencies": {
+    "@linear/sdk": "^75.0.0",
+    "@notionhq/client": "^5.9.0",
+    "@t3-oss/env-core": "^0.13.10",
+    "ai": "^6.0.86",
+    "discord.js": "^14.25.1",
+    "gray-matter": "^4.0.3",
+    "marked": "^17.0.2",
+    "zod": "^4.3.6"
+  }
+}
