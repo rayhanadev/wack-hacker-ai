@@ -1,9 +1,10 @@
-import { ToolLoopAgent, gateway, stepCountIs } from "ai";
+import { ToolLoopAgent, stepCountIs } from "ai";
 import type { Message } from "discord.js";
 import { join } from "node:path";
+import { createModel } from "../utils/model";
 import { createDiscordHistoryTool } from "../tools/discord";
-import { linearTool } from "./linear";
-import { notionTool } from "./notion";
+import { createLinearTool } from "./linear";
+import { createNotionTool } from "./notion";
 
 const systemPromptPath = join(import.meta.dir, "../prompts/agent/SYSTEM.md");
 
@@ -19,12 +20,14 @@ async function loadSystemPrompt(): Promise<string> {
 /** Create a main agent scoped to a Discord message for conversational context. */
 export async function createAgent(message: Message) {
   const instructions = await loadSystemPrompt();
+  const userId = message.author.id;
+
   return new ToolLoopAgent({
-    model: gateway("anthropic/claude-sonnet-4"),
+    model: createModel(userId),
     instructions,
     tools: {
-      linear: linearTool,
-      notion: notionTool,
+      linear: createLinearTool(userId),
+      notion: createNotionTool(userId),
       discord_history: createDiscordHistoryTool(message),
     },
     stopWhen: stepCountIs(10),

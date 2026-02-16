@@ -44,7 +44,9 @@ export async function handleMessage(message: Message): Promise<void> {
   try {
     const context = await buildContext(message);
     const agent = await createAgent(message);
-    const fullPrompt = context ? `${context}\n\n${prompt}` : prompt;
+    const userName = message.author.displayName ?? message.author.username;
+    const userContext = `<current_user name="${userName}" id="${message.author.id}" />`;
+    const fullPrompt = [userContext, context, prompt].filter(Boolean).join("\n\n");
     const result = await agent.stream({ prompt: fullPrompt });
 
     let text = "";

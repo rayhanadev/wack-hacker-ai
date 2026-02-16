@@ -23,6 +23,7 @@
   "dependencies": {
     "@linear/sdk": "^75.0.0",
     "@notionhq/client": "^5.9.0",
+    "@supermemory/tools": "^1.4.0",
     "@t3-oss/env-core": "^0.13.10",
     "ai": "^6.0.86",
     "discord.js": "^14.25.1",

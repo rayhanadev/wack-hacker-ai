@@ -1,6 +1,7 @@
-import { ToolLoopAgent, gateway, stepCountIs, tool } from "ai";
+import { ToolLoopAgent, stepCountIs, tool } from "ai";
 import { join } from "node:path";
 import { z } from "zod";
+import { createModel } from "../utils/model";
 import {
   aggregateIssues,
   createCommentTool,
@@ -55,8 +56,9 @@ async function loadSystemPrompt(): Promise<string> {
   return systemPromptCache;
 }
 
-/** Subagent tool for Linear project management. */
-export const linearTool = tool({
+/** Create a subagent tool for Linear project management, scoped to a Discord user. */
+export function createLinearTool(userId: string) {
+  return tool({
   description:
     "Interact with Linear for project management. Searches, retrieves, creates, and updates issues, projects, documents, comments, cycles, initiatives, customer requests, labels, teams, and users. Use for any task/ticket/issue/sprint/project-related request.",
   inputSchema: z.object({
@@ -116,7 +118,7 @@ export const linearTool = tool({
     };
 
     const subagent = new ToolLoopAgent({
-      model: gateway("anthropic/claude-sonnet-4"),
+      model: createModel(userId),
       instructions,
       tools,
       prepareStep: async () => {
@@ -135,3 +137,4 @@ export const linearTool = tool({
     return result.text;
   },
 });
+}

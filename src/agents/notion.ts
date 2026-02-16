@@ -1,6 +1,7 @@
-import { ToolLoopAgent, gateway, stepCountIs, tool } from "ai";
+import { ToolLoopAgent, stepCountIs, tool } from "ai";
 import { join } from "node:path";
 import { z } from "zod";
+import { createModel } from "../utils/model";
 import {
   appendPageContent,
   createComment,
@@ -36,8 +37,9 @@ async function loadSystemPrompt(): Promise<string> {
   return systemPromptCache;
 }
 
-/** Subagent tool for Notion workspace management. */
-export const notionTool = tool({
+/** Create a subagent tool for Notion workspace management, scoped to a Discord user. */
+export function createNotionTool(userId: string) {
+  return tool({
   description:
     "Manage Notion pages, databases, and content. Searches, retrieves, creates, and updates pages, databases, and comments. Use for any docs/wiki/database/workspace-related request.",
   inputSchema: z.object({
@@ -72,7 +74,7 @@ export const notionTool = tool({
     };
 
     const subagent = new ToolLoopAgent({
-      model: gateway("anthropic/claude-sonnet-4"),
+      model: createModel(userId),
       instructions,
       tools,
       prepareStep: async () => {
@@ -91,3 +93,4 @@ export const notionTool = tool({
     return result.text;
   },
 });
+}
