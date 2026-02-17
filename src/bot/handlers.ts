@@ -1,5 +1,6 @@
 import type { Collection, Message } from "discord.js";
 import { createAgent } from "../agents/index";
+import { isOrganizer } from "../utils/roles";
 
 const EDIT_INTERVAL_MS = 1500;
 const MAX_LENGTH = 2000;
@@ -7,8 +8,7 @@ const CONTEXT_MESSAGE_COUNT = 5;
 
 /** Fetch recent messages and format as XML context. */
 async function buildContext(message: Message): Promise<string> {
-  const channel = message.channel.isThread() ? message.channel : message.channel;
-  const recent: Collection<string, Message> = await channel.messages.fetch({
+  const recent: Collection<string, Message> = await message.channel.messages.fetch({
     limit: CONTEXT_MESSAGE_COUNT + 1,
     before: message.id,
   });
@@ -16,9 +16,10 @@ async function buildContext(message: Message): Promise<string> {
   const messages = [...recent.values()].reverse().slice(-CONTEXT_MESSAGE_COUNT);
   if (messages.length === 0) return "";
 
+  const botMention = message.client.user ? new RegExp(`<@!?${message.client.user.id}>`) : null;
   const lines = messages.map((m) => {
     const name = m.author.displayName ?? m.author.username;
-    const content = m.content.replace(/<@!?\d+>/g, "").trim();
+    const content = botMention ? m.content.replace(botMention, "").trim() : m.content.trim();
     return `  <message author="${name}" bot="${m.author.bot}">${content}</message>`;
   });
 
@@ -32,8 +33,13 @@ export async function handleMessage(message: Message): Promise<void> {
   const botUser = message.client.user;
   if (!botUser || !message.mentions.has(botUser)) return;
 
-  const prompt = message.content.replace(/<@!?\d+>/g, "").trim();
+  const prompt = message.content.replace(new RegExp(`<@!?${botUser.id}>`), "").trim();
   if (!prompt) return;
+
+  const member = message.member ?? await message.guild?.members.fetch(message.author.id);
+  if (!member) return;
+
+  const organizerMode = isOrganizer(member);
 
   await message.react("👀");
 
@@ -42,12 +48,9 @@ export async function handleMessage(message: Message): Promise<void> {
     : await message.startThread({ name: prompt.slice(0, 100) });
 
   try {
-    const context = await buildContext(message);
-    const agent = await createAgent(message);
-    const userName = message.author.displayName ?? message.author.username;
-    const userContext = `<current_user name="${userName}" id="${message.author.id}" />`;
-    const fullPrompt = [userContext, context, prompt].filter(Boolean).join("\n\n");
-    const result = await agent.stream({ prompt: fullPrompt });
+    const recentMessages = await buildContext(message);
+    const agent = await createAgent(message, thread, recentMessages || undefined, organizerMode);
+    const result = await agent.stream({ prompt });
 
     let text = "";
     let reply: Message | null = null;

@@ -1,6 +1,6 @@
 import { gateway } from "ai";
 import { withSupermemory } from "@supermemory/tools/ai-sdk";
-import { env } from "./env";
+import { env } from "../env";
 
 /** Create a memory-aware model scoped to a Discord user. */
 export function createModel(userId: string) {
