@@ -1,0 +1,14 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: wack-hacker-ai-app
+    restart: always
+    env_file:
+      - .env.local
+    networks:
+      - default
+
+networks:
+   default:
