@@ -5,6 +5,7 @@ import {
   ButtonStyle,
   ComponentType,
   EmbedBuilder,
+  MessageFlags,
   type ButtonInteraction,
   type GuildTextBasedChannel,
 } from "discord.js";
@@ -63,7 +64,7 @@ export async function requestApproval(
       componentType: ComponentType.Button,
       filter: (i: ButtonInteraction) => {
         if (ctx.userId && i.user.id !== ctx.userId) {
-          i.reply({ content: "You are not authorized to respond.", flags: 64 });
+          i.reply({ content: "You are not authorized to respond.", flags: MessageFlags.Ephemeral });
           return false;
         }
         return true;

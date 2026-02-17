@@ -625,7 +625,8 @@ export function createAssignRoleTool(guild: Guild, perms: Permissions) {
       if (!role) return json({ error: "Role not found" });
       const hierarchyDenied = perms.aboveRole(role);
       if (hierarchyDenied) return hierarchyDenied;
-      const target = await guild.members.fetch(member_id);
+      const target = await guild.members.fetch(member_id).catch(() => null);
+      if (!target) return json({ error: "Member not found" });
       await target.roles.add(role_id);
       return json({ success: true, member: target.displayName, role: role.name });
     },
@@ -646,7 +647,8 @@ export function createRemoveRoleTool(guild: Guild, perms: Permissions) {
       if (!role) return json({ error: "Role not found" });
       const hierarchyDenied = perms.aboveRole(role);
       if (hierarchyDenied) return hierarchyDenied;
-      const target = await guild.members.fetch(member_id);
+      const target = await guild.members.fetch(member_id).catch(() => null);
+      if (!target) return json({ error: "Member not found" });
       await target.roles.remove(role_id);
       return json({ success: true, member: target.displayName, role: role.name });
     },
@@ -664,7 +666,8 @@ export function createGetMemberTool(guild: Guild) {
       member_id: z.string().describe("Member (user) ID"),
     }),
     execute: async ({ member_id }) => {
-      const member = await guild.members.fetch(member_id);
+      const member = await guild.members.fetch(member_id).catch(() => null);
+      if (!member) return json({ error: "Member not found" });
       return json({
         ...summarizeMember(member),
         premiumSince: member.premiumSince?.toISOString() ?? null,
@@ -684,7 +687,8 @@ export function createSetNicknameTool(guild: Guild, perms: Permissions) {
     execute: async ({ member_id, nickname }) => {
       const denied = perms.server(PermissionFlagsBits.ManageNicknames);
       if (denied) return denied;
-      const target = await guild.members.fetch(member_id);
+      const target = await guild.members.fetch(member_id).catch(() => null);
+      if (!target) return json({ error: "Member not found" });
       await target.setNickname(nickname);
       return json({ success: true, member: target.user.username, nickname });
     },
@@ -1005,9 +1009,9 @@ export function createCreateThreadTool(guild: Guild, perms: Permissions) {
     execute: async ({ channel_id, name, message_id, auto_archive_duration, type, slowmode, invitable }) => {
       const channel = await guild.channels.fetch(channel_id);
       if (!channel) return json({ error: "Channel not found" });
-      const denied = perms.channel(channel, PermissionFlagsBits.ManageThreads)
-        ?? perms.channel(channel, PermissionFlagsBits.SendMessages);
-      if (denied) return denied;
+      const manageThreadsDenied = perms.channel(channel, PermissionFlagsBits.ManageThreads);
+      const sendMessagesDenied = perms.channel(channel, PermissionFlagsBits.SendMessages);
+      if (manageThreadsDenied && sendMessagesDenied) return manageThreadsDenied;
       if (!channel.isTextBased() || channel.isThread()) return json({ error: "Cannot create a thread in this channel type" });
       if (!("threads" in channel)) return json({ error: "This channel type does not support threads" });
       const archiveDuration = auto_archive_duration ? (Number(auto_archive_duration) as 60 | 1440 | 4320 | 10080) : undefined;
