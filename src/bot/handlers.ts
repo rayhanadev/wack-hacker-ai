@@ -1,4 +1,3 @@
-import { smoothStream } from "ai";
 import type { Collection, Message } from "discord.js";
 import { createAgent } from "../agents/index";
 import { buildPromptWithAttachments, type AttachmentInfo } from "../utils/attachments";
@@ -95,7 +94,6 @@ export async function handleMessage(message: Message): Promise<void> {
     const promptInput = buildPromptWithAttachments(prompt, attachments);
     const result = await agent.stream({
       prompt: promptInput,
-      experimental_transform: smoothStream(),
     });
 
     let text = "";
@@ -104,6 +102,8 @@ export async function handleMessage(message: Message): Promise<void> {
     let toolCallCount = 0;
     let needsNewline = false;
     let statusLine = "";
+    let editing = false;
+    let editPromise: Promise<unknown> = Promise.resolve();
     const startTime = Date.now();
 
     for await (const part of result.fullStream) {
@@ -133,14 +133,25 @@ export async function handleMessage(message: Message): Promise<void> {
       const displayText = (text + statusLine).slice(0, MAX_LENGTH);
 
       if (!reply) {
+        // Must await the first send to get the reply Message object
         reply = await thread.send(displayText);
-        await message.reactions.removeAll();
+        message.reactions.removeAll().catch(() => {});
         lastEdit = Date.now();
-      } else if (Date.now() - lastEdit >= EDIT_INTERVAL_MS) {
-        await reply.edit(displayText);
+      } else if (Date.now() - lastEdit >= EDIT_INTERVAL_MS && !editing) {
+        // Fire edit without blocking stream consumption
+        editing = true;
         lastEdit = Date.now();
+        editPromise = reply
+          .edit(displayText)
+          .catch(() => {})
+          .finally(() => {
+            editing = false;
+          });
       }
     }
+
+    // Wait for any in-flight edit before the final edit
+    await editPromise;
 
     const durationSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
     const toolText =
