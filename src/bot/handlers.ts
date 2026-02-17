@@ -1,5 +1,7 @@
 import type { Collection, Message } from "discord.js";
 import { createAgent } from "../agents/index";
+import { buildPromptWithAttachments, type AttachmentInfo } from "../utils/attachments";
+import { isOrganizer } from "../utils/roles";
 
 const EDIT_INTERVAL_MS = 1500;
 const MAX_LENGTH = 2000;
@@ -7,8 +9,7 @@ const CONTEXT_MESSAGE_COUNT = 5;
 
 /** Fetch recent messages and format as XML context. */
 async function buildContext(message: Message): Promise<string> {
-  const channel = message.channel.isThread() ? message.channel : message.channel;
-  const recent: Collection<string, Message> = await channel.messages.fetch({
+  const recent: Collection<string, Message> = await message.channel.messages.fetch({
     limit: CONTEXT_MESSAGE_COUNT + 1,
     before: message.id,
   });
@@ -16,10 +17,15 @@ async function buildContext(message: Message): Promise<string> {
   const messages = [...recent.values()].reverse().slice(-CONTEXT_MESSAGE_COUNT);
   if (messages.length === 0) return "";
 
+  const botMention = message.client.user ? new RegExp(`<@!?${message.client.user.id}>`) : null;
   const lines = messages.map((m) => {
     const name = m.author.displayName ?? m.author.username;
-    const content = m.content.replace(/<@!?\d+>/g, "").trim();
-    return `  <message author="${name}" bot="${m.author.bot}">${content}</message>`;
+    const content = botMention ? m.content.replace(botMention, "").trim() : m.content.trim();
+    const attachments =
+      m.attachments.size > 0
+        ? `\n${[...m.attachments.values()].map((a) => `    <attachment name="${a.name}" url="${a.url}" type="${a.contentType ?? "unknown"}" />`).join("\n")}`
+        : "";
+    return `  <message author="${name}" bot="${m.author.bot}">${content}${attachments}</message>`;
   });
 
   return `<recent_messages>\n${lines.join("\n")}\n</recent_messages>`;
@@ -32,20 +38,30 @@ export async function handleMessage(message: Message): Promise<void> {
   const botUser = message.client.user;
   if (!botUser || !message.mentions.has(botUser)) return;
 
-  const prompt = message.content.replace(/<@!?\d+>/g, "").trim();
-  if (!prompt) return;
+  const prompt = message.content.replace(new RegExp(`<@!?${botUser.id}>`), "").trim();
+  const attachments: AttachmentInfo[] = [...message.attachments.values()].map((a) => ({
+    url: a.url,
+    name: a.name,
+    contentType: a.contentType ?? "application/octet-stream",
+  }));
+  if (!prompt && attachments.length === 0) return;
+
+  const member = message.member ?? await message.guild?.members.fetch(message.author.id);
+  if (!member) return;
+
+  const organizerMode = isOrganizer(member);
 
   await message.react("👀");
 
   const thread = message.channel.isThread()
     ? message.channel
-    : await message.startThread({ name: prompt.slice(0, 100) });
+    : await message.startThread({ name: (prompt || `${attachments.length} attachment(s)`).slice(0, 100) });
 
   try {
-    const context = await buildContext(message);
-    const agent = await createAgent(message);
-    const fullPrompt = context ? `${context}\n\n${prompt}` : prompt;
-    const result = await agent.stream({ prompt: fullPrompt });
+    const recentMessages = await buildContext(message);
+    const agent = await createAgent(message, thread, recentMessages || undefined, organizerMode);
+    const promptInput = buildPromptWithAttachments(prompt, attachments);
+    const result = await agent.stream({ prompt: promptInput });
 
     let text = "";
     let reply: Message | null = null;

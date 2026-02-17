@@ -10,7 +10,7 @@ import { createSkillSystem } from "./skills";
 // Client
 // ---------------------------------------------------------------------------
 
-const notion = new Client({ auth: env.NOTION_TOKEN });
+export const notion = new Client({ auth: env.NOTION_TOKEN });
 
 // ---------------------------------------------------------------------------
 // Skills

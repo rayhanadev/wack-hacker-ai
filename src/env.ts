@@ -8,6 +8,8 @@ export const env = createEnv({
     AI_GATEWAY_API_KEY: z.string(),
     LINEAR_API_KEY: z.string(),
     NOTION_TOKEN: z.string(),
+    SUPERMEMORY_API_KEY: z.string(),
+    GROQ_API_KEY: z.string(),
   },
   runtimeEnv: process.env,
   emptyStringAsUndefined: true,
