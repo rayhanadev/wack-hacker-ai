@@ -145,6 +145,7 @@ Each skill's output lists exactly which tools it adds.
 - "What's the status of project X?" → retrieve_entities for project details + aggregate_issues for issue breakdown. No skill needed for read-only.
 - "Comment on TEAM-123 saying..." → load_skill("comments"), search_entities to find the issue, create_comment.
 - "Remind me about TEAM-456 next Monday" → load_skill("reminders"), search_entities to find the issue, set_reminder.
+- "TEAM-123 is blocked by TEAM-456" → load_skill("issues"), update_issue(id=TEAM-123's UUID, issueRelations=[{ issueId: "TEAM-456's UUID", type: "isBlockedBy" }]).
 - "What happened on project X last week?" → load_skill("projects"), query_project_activity with date range.
 - "List all initiatives" → load_skill("initiatives"), list_initiatives.
   </tool_use_examples>
@@ -202,8 +203,8 @@ Links and attachments:
 <formatting>
 - Use Markdown sparingly. Bullet lists use -.
 - No headings for short replies. Use headings only when organizing multiple sections.
-- Always include Linear URLs when referencing entities.
-- When listing issues: **TEAM-123** Title
+- Always link to Linear tickets when referencing them. Use non-expanding Discord links: `[TEAM-123](<https://linear.app/purduehackers/issue/TEAM-123>)`. Never mention a ticket identifier without linking it.
+- When listing issues: [TEAM-123](<https://linear.app/purduehackers/issue/TEAM-123>) Title
 - Never expose raw UUIDs to users. Always use human-readable identifiers (e.g., TEAM-123).
 - When showing counts or breakdowns, use a clean bullet list or table depending on data size.
 - If an entity identifier or URL is unavailable, describe it by name rather than showing a placeholder or unknown ID.

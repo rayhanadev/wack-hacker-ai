@@ -2,6 +2,7 @@ import {
   LinearClient,
   type InitiativeStatus,
   type InitiativeUpdateHealthType,
+  type IssueRelationType,
   type ProjectUpdateHealthType,
 } from "@linear/sdk";
 import { experimental_transcribe as transcribe, tool } from "ai";
@@ -172,13 +173,29 @@ export const retrieveEntities = tool({
         switch (type) {
           case "Issue": {
             const i = await linear.issue(id);
-            const [state, assignee, team, project, labels] = await Promise.all([
-              i.state,
-              i.assignee,
-              i.team,
-              i.project,
-              i.labels(),
-            ]);
+            const [state, assignee, team, project, labels, relations, inverseRelations] =
+              await Promise.all([
+                i.state,
+                i.assignee,
+                i.team,
+                i.project,
+                i.labels(),
+                i.relations(),
+                i.inverseRelations(),
+              ]);
+            const mapRelation = async (r: (typeof relations.nodes)[number]) => {
+              const [ri, rri] = await Promise.all([r.issue, r.relatedIssue]);
+              return {
+                id: r.id,
+                type: r.type,
+                issue: ri
+                  ? { id: ri.id, identifier: ri.identifier, title: ri.title }
+                  : null,
+                relatedIssue: rri
+                  ? { id: rri.id, identifier: rri.identifier, title: rri.title }
+                  : null,
+              };
+            };
             return {
               id: i.id,
               identifier: i.identifier,
@@ -192,6 +209,8 @@ export const retrieveEntities = tool({
               team: team?.name,
               project: project?.name,
               labels: labels.nodes.map((l) => l.name),
+              relations: await Promise.all(relations.nodes.map(mapRelation)),
+              inverseRelations: await Promise.all(inverseRelations.nodes.map(mapRelation)),
             };
           }
           case "Project": {
@@ -358,6 +377,23 @@ export const aggregateIssues = tool({
 // Issue tools
 // ---------------------------------------------------------------------------
 
+const issueRelationSchema = z
+  .array(
+    z.object({
+      issueId: z.string().describe("Issue identifier (e.g. 'TEAM-123') or UUID"),
+      type: z.enum([
+        "isBlocking",
+        "isBlockedBy",
+        "isRelatedTo",
+        "isDuplicateOf",
+        "isDuplicatedBy",
+        "unrelatedTo",
+      ]),
+    }),
+  )
+  .optional()
+  .describe("Add or remove relations with other issues");
+
 const issueFields = {
   title: z.string().optional(),
   description: z.string().optional(),
@@ -369,31 +405,118 @@ const issueFields = {
   labelIds: z.array(z.string()).optional(),
   dueDate: z.string().optional().describe("ISO date"),
   cycleId: z.string().optional(),
+  parentId: z.string().optional().describe("Parent issue ID or identifier for sub-issues"),
 };
 
+/** Map semantic relation names to createIssueRelation args. */
+function resolveRelation(
+  sourceIssueId: string,
+  rel: { issueId: string; type: string },
+): { issueId: string; relatedIssueId: string; type: IssueRelationType } | null {
+  switch (rel.type) {
+    case "isBlocking":
+      return { issueId: sourceIssueId, relatedIssueId: rel.issueId, type: "blocks" as IssueRelationType };
+    case "isBlockedBy":
+      return { issueId: rel.issueId, relatedIssueId: sourceIssueId, type: "blocks" as IssueRelationType };
+    case "isRelatedTo":
+      return { issueId: sourceIssueId, relatedIssueId: rel.issueId, type: "related" as IssueRelationType };
+    case "isDuplicateOf":
+      return { issueId: sourceIssueId, relatedIssueId: rel.issueId, type: "duplicate" as IssueRelationType };
+    case "isDuplicatedBy":
+      return { issueId: rel.issueId, relatedIssueId: sourceIssueId, type: "duplicate" as IssueRelationType };
+    case "unrelatedTo":
+      return null; // handled separately via delete
+    default:
+      return null;
+  }
+}
+
+/** Remove all relations between two issues. targetId can be a UUID or identifier. */
+async function removeRelationsBetween(issueId: string, targetId: string) {
+  // Resolve targetId to UUID if it's an identifier (e.g. "TEAM-123")
+  const targetIssue = await linear.issue(targetId);
+  const resolvedTargetId = targetIssue.id;
+
+  const issue = await linear.issue(issueId);
+  const [relations, inverseRelations] = await Promise.all([
+    issue.relations(),
+    issue.inverseRelations(),
+  ]);
+  const toDelete = [
+    ...relations.nodes.filter((r) => r.relatedIssueId === resolvedTargetId),
+    ...inverseRelations.nodes.filter((r) => r.issueId === resolvedTargetId),
+  ];
+  await Promise.all(toDelete.map((r) => linear.deleteIssueRelation(r.id)));
+  return toDelete.length;
+}
+
+/** Apply a list of issue relations after creating/updating an issue. */
+async function applyIssueRelations(
+  issueId: string,
+  relations: { issueId: string; type: string }[],
+) {
+  const results = [];
+  for (const rel of relations) {
+    if (rel.type === "unrelatedTo") {
+      const removed = await removeRelationsBetween(issueId, rel.issueId);
+      results.push({ type: "unrelatedTo", target: rel.issueId, removed });
+      continue;
+    }
+    const args = resolveRelation(issueId, rel);
+    if (!args) continue;
+    const payload = await linear.createIssueRelation(args);
+    const relation = await payload.issueRelation;
+    if (relation) {
+      results.push({ id: relation.id, type: relation.type });
+    }
+  }
+  return results;
+}
+
 export const createIssueTool = tool({
-  description: "Create an issue.",
+  description: "Create an issue. Supports setting relations and parent (sub-issue).",
   inputSchema: z.object({
     ...issueFields,
     title: z.string(),
     teamId: z.string(),
+    relationships: issueRelationSchema,
   }),
-  execute: async (input) => {
+  execute: async ({ relationships, ...input }) => {
     const payload = await linear.createIssue(input);
     const issue = await payload.issue;
     if (!issue) return "Failed to create issue";
-    return json({ id: issue.id, identifier: issue.identifier, title: issue.title, url: issue.url });
+    const relationResults =
+      relationships?.length ? await applyIssueRelations(issue.id, relationships) : [];
+    return json({
+      id: issue.id,
+      identifier: issue.identifier,
+      title: issue.title,
+      url: issue.url,
+      relations: relationResults,
+    });
   },
 });
 
 export const updateIssueTool = tool({
-  description: "Update an issue (only include fields to change).",
-  inputSchema: z.object({ id: z.string(), ...issueFields }),
-  execute: async ({ id, ...input }) => {
+  description: "Update an issue (only include fields to change). Supports setting relations and parent.",
+  inputSchema: z.object({
+    id: z.string(),
+    ...issueFields,
+    issueRelations: issueRelationSchema,
+  }),
+  execute: async ({ id, issueRelations, ...input }) => {
     const payload = await linear.updateIssue(id, input);
     const issue = await payload.issue;
     if (!issue) return "Failed to update issue";
-    return json({ id: issue.id, identifier: issue.identifier, title: issue.title, url: issue.url });
+    const relationResults =
+      issueRelations?.length ? await applyIssueRelations(issue.id, issueRelations) : [];
+    return json({
+      id: issue.id,
+      identifier: issue.identifier,
+      title: issue.title,
+      url: issue.url,
+      relations: relationResults,
+    });
   },
 });
 

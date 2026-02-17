@@ -28,7 +28,17 @@ tools: create_issue, update_issue, delete_issue, query_issue_activity
   - Only set a milestone if a project is set and the user asked for it.
 - Due date: set only if the user asked. ISO 8601 format "YYYY-MM-DD".
 - Priority: 0=None, 1=Urgent, 2=High, 3=Normal, 4=Low.
-- Relationships: only add "blocks/blocked by/related" if the user asked and you can resolve the referenced issues.
+- Relationships: only add relations if the user asked and you can resolve the referenced issues.
+  - Use create_issue `relationships` or update_issue `issueRelations` with these semantic types:
+    - `{ issueId: "<ID>", type: "isBlocking" }` — this issue blocks the referenced issue
+    - `{ issueId: "<ID>", type: "isBlockedBy" }` — this issue is blocked by the referenced issue
+    - `{ issueId: "<ID>", type: "isRelatedTo" }` — bidirectional relation
+    - `{ issueId: "<ID>", type: "isDuplicateOf" }` — this issue is a duplicate of the referenced issue
+    - `{ issueId: "<ID>", type: "isDuplicatedBy" }` — the referenced issue is a duplicate of this one
+    - `{ issueId: "<ID>", type: "unrelatedTo" }` — remove all relations with the referenced issue
+  - issueId accepts identifiers (e.g. "TEAM-123") or UUIDs.
+  - To find issue IDs, use search_entities first. To see existing relations, use retrieve_entities (relations and inverseRelations are included).
+- Parent / sub-issues: use `parentId` to make an issue a sub-issue of another. Set to null to clear.
 - Customer request: create/attach when user explicitly frames it as customer feedback; ensure it maps to a specific customer.
   </field_setting>
 
@@ -49,6 +59,8 @@ tools: create_issue, update_issue, delete_issue, query_issue_activity
 - Update only fields the user asks for; don't opportunistically "clean up" other fields.
 - Description replaces the entire description; preserve existing text when "adding" something.
 - Don't include Discord thread/channel IDs in descriptions.
+- Use `issueRelations` to add/remove relations on existing issues (same semantic types as `relationships` on create).
+- Use `parentId` to set/clear parent (sub-issue). Set to null to remove parent.
 </updating>
 
 <deleting>
