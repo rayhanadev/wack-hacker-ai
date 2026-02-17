@@ -14,15 +14,17 @@ Available scopes:
 </views>
 
 <list_mode>
+
 - See individual projects with status/lead/health/priority and timestamps.
 - Supports pagination and ordering.
 - Use when you need "which projects are..."
-</list_mode>
+  </list_mode>
 
 <count_mode>
+
 - Fast totals: "how many active projects?"
 - Use when you only need aggregate numbers, not details.
-</count_mode>
+  </count_mode>
 
 <filters>
 - Keep it explicit: "status is planned", "members include X", "labels include Customer".
@@ -30,5 +32,6 @@ Available scopes:
 </filters>
 
 <initiative_usage>
+
 - Use initiative view when a rollup across projects contributing to a strategic effort is needed.
-</initiative_usage>
+  </initiative_usage>

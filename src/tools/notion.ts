@@ -16,22 +16,18 @@ export const notion = new Client({ auth: env.NOTION_TOKEN });
 // Skills
 // ---------------------------------------------------------------------------
 
-export const {
-  getBaseToolNames,
-  getSkillToolNames,
-  createLoadSkillTool,
-  resolveSystemPrompt,
-} = createSkillSystem({
-  skillsDir: join(import.meta.dir, "../prompts/notion/skills"),
-  skillNames: ["pages", "databases", "comments"],
-  baseToolNames: [
-    "load_skill",
-    "search_notion",
-    "retrieve_page",
-    "retrieve_database",
-    "list_users",
-  ],
-});
+export const { getBaseToolNames, getSkillToolNames, createLoadSkillTool, resolveSystemPrompt } =
+  createSkillSystem({
+    skillsDir: join(import.meta.dir, "../prompts/notion/skills"),
+    skillNames: ["pages", "databases", "comments"],
+    baseToolNames: [
+      "load_skill",
+      "search_notion",
+      "retrieve_page",
+      "retrieve_database",
+      "list_users",
+    ],
+  });
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -80,9 +76,7 @@ async function deleteAllBlocks(pageId: string) {
       page_size: 100,
       ...(cursor && { start_cursor: cursor }),
     });
-    await Promise.all(
-      response.results.map((b) => notion.blocks.delete({ block_id: b.id })),
-    );
+    await Promise.all(response.results.map((b) => notion.blocks.delete({ block_id: b.id })));
     cursor = response.has_more ? (response.next_cursor ?? undefined) : undefined;
   } while (cursor);
 }
@@ -138,18 +132,22 @@ export const retrievePage = tool({
     for (const [key, value] of Object.entries(page.properties as Record<string, any>)) {
       properties[key] = { type: value.type, id: value.id };
       if (value.type === "title") properties[key].value = richTextToPlain(value.title ?? []);
-      else if (value.type === "rich_text") properties[key].value = richTextToPlain(value.rich_text ?? []);
+      else if (value.type === "rich_text")
+        properties[key].value = richTextToPlain(value.rich_text ?? []);
       else if (value.type === "number") properties[key].value = value.number;
       else if (value.type === "select") properties[key].value = value.select?.name;
-      else if (value.type === "multi_select") properties[key].value = value.multi_select?.map((s: any) => s.name);
+      else if (value.type === "multi_select")
+        properties[key].value = value.multi_select?.map((s: any) => s.name);
       else if (value.type === "status") properties[key].value = value.status?.name;
       else if (value.type === "date") properties[key].value = value.date;
       else if (value.type === "checkbox") properties[key].value = value.checkbox;
       else if (value.type === "url") properties[key].value = value.url;
       else if (value.type === "email") properties[key].value = value.email;
       else if (value.type === "phone_number") properties[key].value = value.phone_number;
-      else if (value.type === "people") properties[key].value = value.people?.map((p: any) => p.name ?? p.id);
-      else if (value.type === "relation") properties[key].value = value.relation?.map((r: any) => r.id);
+      else if (value.type === "people")
+        properties[key].value = value.people?.map((p: any) => p.name ?? p.id);
+      else if (value.type === "relation")
+        properties[key].value = value.relation?.map((r: any) => r.id);
       else if (value.type === "formula") properties[key].value = value.formula;
       else if (value.type === "rollup") properties[key].value = value.rollup;
     }
@@ -174,9 +172,15 @@ export const retrieveDatabase = tool({
     const schema: Record<string, any> = {};
     for (const [key, value] of Object.entries(db.properties as Record<string, any>)) {
       schema[key] = { type: value.type, id: value.id };
-      if (value.type === "select") schema[key].options = value.select?.options?.map((o: any) => o.name);
-      else if (value.type === "multi_select") schema[key].options = value.multi_select?.options?.map((o: any) => o.name);
-      else if (value.type === "status") schema[key].groups = value.status?.groups?.map((g: any) => ({ name: g.name, options: g.options?.map((o: any) => o.name) }));
+      if (value.type === "select")
+        schema[key].options = value.select?.options?.map((o: any) => o.name);
+      else if (value.type === "multi_select")
+        schema[key].options = value.multi_select?.options?.map((o: any) => o.name);
+      else if (value.type === "status")
+        schema[key].groups = value.status?.groups?.map((g: any) => ({
+          name: g.name,
+          options: g.options?.map((o: any) => o.name),
+        }));
     }
     return json({
       id: db.id,
@@ -217,10 +221,7 @@ export const createPage = tool({
       .record(z.string(), z.any())
       .optional()
       .describe("Page properties (required for database parents). Use Notion property format."),
-    content: z
-      .string()
-      .optional()
-      .describe("Markdown content for the page body."),
+    content: z.string().optional().describe("Markdown content for the page body."),
     icon: z.any().optional().describe("Page icon (emoji or external URL)"),
     cover: z.any().optional().describe("Page cover (external URL)"),
   }),
@@ -259,7 +260,8 @@ export const updatePage = tool({
 });
 
 export const retrievePageProperty = tool({
-  description: "Retrieve a specific property value from a page (useful for paginated properties like relations and rollups).",
+  description:
+    "Retrieve a specific property value from a page (useful for paginated properties like relations and rollups).",
   inputSchema: z.object({
     page_id: z.string().describe("Page ID"),
     property_id: z.string().describe("Property ID (from retrieve_page results)"),
@@ -341,13 +343,16 @@ export const queryDatabase = tool({
           else if (value.type === "rich_text") props[key] = richTextToPlain(value.rich_text ?? []);
           else if (value.type === "number") props[key] = value.number;
           else if (value.type === "select") props[key] = value.select?.name;
-          else if (value.type === "multi_select") props[key] = value.multi_select?.map((s: any) => s.name);
+          else if (value.type === "multi_select")
+            props[key] = value.multi_select?.map((s: any) => s.name);
           else if (value.type === "status") props[key] = value.status?.name;
           else if (value.type === "date") props[key] = value.date;
           else if (value.type === "checkbox") props[key] = value.checkbox;
           else if (value.type === "url") props[key] = value.url;
-          else if (value.type === "people") props[key] = value.people?.map((p: any) => p.name ?? p.id);
-          else if (value.type === "relation") props[key] = value.relation?.map((rel: any) => rel.id);
+          else if (value.type === "people")
+            props[key] = value.people?.map((p: any) => p.name ?? p.id);
+          else if (value.type === "relation")
+            props[key] = value.relation?.map((rel: any) => rel.id);
           else props[key] = `[${value.type}]`;
         }
         return { id: r.id, url: r.url, properties: props };
@@ -363,7 +368,11 @@ export const createDatabase = tool({
   inputSchema: z.object({
     parent_page_id: z.string().describe("Parent page ID"),
     title: z.string().describe("Database title"),
-    properties: z.record(z.string(), z.any()).describe("Property schema (e.g., { Name: { title: {} }, Status: { select: { options: [...] } } })"),
+    properties: z
+      .record(z.string(), z.any())
+      .describe(
+        "Property schema (e.g., { Name: { title: {} }, Status: { select: { options: [...] } } })",
+      ),
   }),
   execute: async ({ parent_page_id, title, properties }) => {
     const db: any = await notion.databases.create({

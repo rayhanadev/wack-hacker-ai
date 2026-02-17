@@ -7,27 +7,10 @@ import {
   EmbedBuilder,
   MessageFlags,
   type ButtonInteraction,
-  type GuildTextBasedChannel,
 } from "discord.js";
 import { z } from "zod";
-
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-export interface ApprovalContext {
-  /** Channel where the approval prompt will be sent. */
-  channel: GuildTextBasedChannel;
-  /** Restrict who can click the buttons (omit = anyone). */
-  userId?: string;
-  /** Timeout in ms before auto-deny (default 60 000). */
-  timeout?: number;
-}
-
-export interface ApprovalResult {
-  approved: boolean;
-  userId?: string;
-}
+import type { ApprovalContext, ApprovalResult } from "./types";
+export type { ApprovalContext, ApprovalResult } from "./types";
 
 // ---------------------------------------------------------------------------
 // requestApproval — standalone, reusable anywhere
@@ -64,7 +47,10 @@ export async function requestApproval(
       componentType: ComponentType.Button,
       filter: (i: ButtonInteraction) => {
         if (ctx.userId && i.user.id !== ctx.userId) {
-          i.reply({ content: "You are not authorized to respond.", flags: MessageFlags.Ephemeral });
+          void i.reply({
+            content: "You are not authorized to respond.",
+            flags: MessageFlags.Ephemeral,
+          });
           return false;
         }
         return true;
@@ -119,7 +105,7 @@ export function withApproval<T extends Tool>(
 
       const embed = new EmbedBuilder()
         .setDescription(
-          `I want to run the following command.\n\n**Reason:** *${reason}*\n\n${command}`,
+          `I want to run the following command.\n\n**Reason:** *${String(reason)}*\n\n${command}`,
         )
         .setColor(0xfee75c);
 

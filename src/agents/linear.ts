@@ -63,12 +63,17 @@ export function createLinearTool(userId: string, recentMessages?: string) {
       "Interact with Linear for project management. Searches, retrieves, creates, and updates issues, projects, documents, comments, cycles, initiatives, customer requests, labels, teams, and users. Use for any task/ticket/issue/sprint/project-related request.",
     inputSchema: z.object({
       task: z.string().describe("The task to perform in Linear"),
-      attachments: z.array(attachmentSchema).optional().describe("File attachments from the user's message"),
+      attachments: z
+        .array(attachmentSchema)
+        .optional()
+        .describe("File attachments from the user's message"),
     }),
     execute: async ({ task, attachments }, { abortSignal }) => {
       const loadedSkills = new Set<string>();
       const baseInstructions = await loadSystemPrompt();
-      const instructions = recentMessages ? `${baseInstructions}\n\n${recentMessages}` : baseInstructions;
+      const instructions = recentMessages
+        ? `${baseInstructions}\n\n${recentMessages}`
+        : baseInstructions;
 
       const tools = {
         // Meta

@@ -22,6 +22,7 @@ In Linear, customer requests are called "customer needs."
 </updating>
 
 <listing_analysis>
+
 - List by issue/project/customer; can filter by state.
 - When doing theme analysis, present grouped themes clearly, reference specific customer requests as examples, and avoid overconfident prioritization if the data doesn't support it.
-</listing_analysis>
+  </listing_analysis>

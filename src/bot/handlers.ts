@@ -46,7 +46,7 @@ export async function handleMessage(message: Message): Promise<void> {
   }));
   if (!prompt && attachments.length === 0) return;
 
-  const member = message.member ?? await message.guild?.members.fetch(message.author.id);
+  const member = message.member ?? (await message.guild?.members.fetch(message.author.id));
   if (!member) return;
 
   const organizerMode = isOrganizer(member);
@@ -55,7 +55,9 @@ export async function handleMessage(message: Message): Promise<void> {
 
   const thread = message.channel.isThread()
     ? message.channel
-    : await message.startThread({ name: (prompt || `${attachments.length} attachment(s)`).slice(0, 100) });
+    : await message.startThread({
+        name: (prompt || `${attachments.length} attachment(s)`).slice(0, 100),
+      });
 
   try {
     const recentMessages = await buildContext(message);

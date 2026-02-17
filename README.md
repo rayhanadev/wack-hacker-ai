@@ -60,14 +60,14 @@ cp .env.example .env
 
 Fill in `.env`:
 
-| Variable | Description |
-| --- | --- |
-| `DISCORD_BOT_TOKEN` | Discord bot token |
-| `AI_GATEWAY_API_KEY` | API key for the AI gateway |
-| `LINEAR_API_KEY` | Linear API key |
-| `NOTION_TOKEN` | Notion integration token |
-| `SUPERMEMORY_API_KEY` | Supermemory API key for persistent memory |
-| `GROQ_API_KEY` | Groq API key (used for media transcription) |
+| Variable              | Description                                 |
+| --------------------- | ------------------------------------------- |
+| `DISCORD_BOT_TOKEN`   | Discord bot token                           |
+| `AI_GATEWAY_API_KEY`  | API key for the AI gateway                  |
+| `LINEAR_API_KEY`      | Linear API key                              |
+| `NOTION_TOKEN`        | Notion integration token                    |
+| `SUPERMEMORY_API_KEY` | Supermemory API key for persistent memory   |
+| `GROQ_API_KEY`        | Groq API key (used for media transcription) |
 
 ## Commands
 

@@ -20,22 +20,27 @@ import { createSkillSystem } from "./skills";
 // Skills
 // ---------------------------------------------------------------------------
 
-export const {
-  getBaseToolNames,
-  getSkillToolNames,
-  createLoadSkillTool,
-  resolveSystemPrompt,
-} = createSkillSystem({
-  skillsDir: join(import.meta.dir, "../prompts/discord/skills"),
-  skillNames: ["channels", "messages", "roles", "members", "webhooks", "events", "threads", "emojis"],
-  baseToolNames: [
-    "load_skill",
-    "get_server_info",
-    "list_channels",
-    "list_roles",
-    "search_members",
-  ],
-});
+export const { getBaseToolNames, getSkillToolNames, createLoadSkillTool, resolveSystemPrompt } =
+  createSkillSystem({
+    skillsDir: join(import.meta.dir, "../prompts/discord/skills"),
+    skillNames: [
+      "channels",
+      "messages",
+      "roles",
+      "members",
+      "webhooks",
+      "events",
+      "threads",
+      "emojis",
+    ],
+    baseToolNames: [
+      "load_skill",
+      "get_server_info",
+      "list_channels",
+      "list_roles",
+      "search_members",
+    ],
+  });
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -126,7 +131,9 @@ function permissionError(permission: bigint, channelId?: string): string {
   const where = channelId
     ? `in <#${channelId}>. Let them know they need this permission in that channel`
     : `required to perform this action. Let them know they need this permission`;
-  return json({ error: `The user does not have the "${name}" permission ${where} or should ask a server admin.` });
+  return json({
+    error: `The user does not have the "${name}" permission ${where} or should ask a server admin.`,
+  });
 }
 
 /** Permission checker scoped to a guild member. Each method returns an error string if denied, null if allowed. */
@@ -144,9 +151,11 @@ export class Permissions {
     if (channel.isThread()) {
       const parent = channel.parent;
       if (parent) {
-        if (!parent.permissionsFor(this.member)?.has(permission)) return permissionError(permission, parent.id);
+        if (!parent.permissionsFor(this.member)?.has(permission))
+          return permissionError(permission, parent.id);
       } else {
-        if (!this.member.permissions.has(permission)) return permissionError(permission, channel.id);
+        if (!this.member.permissions.has(permission))
+          return permissionError(permission, channel.id);
       }
     } else if (!channel.permissionsFor(this.member)?.has(permission)) {
       return permissionError(permission, channel.id);
@@ -157,7 +166,9 @@ export class Permissions {
   /** Check that the member's highest role is above the target role. */
   aboveRole(role: Role): string | null {
     if (this.member.roles.highest.position <= role.position) {
-      return json({ error: `Cannot manage the "${role.name}" role — it is at or above your highest role in the hierarchy.` });
+      return json({
+        error: `Cannot manage the "${role.name}" role — it is at or above your highest role in the hierarchy.`,
+      });
     }
     return null;
   }
@@ -169,7 +180,8 @@ export class Permissions {
 
 export function createGetServerInfoTool(guild: Guild) {
   return tool({
-    description: "Get Discord server overview: name, member count, channel count, role count, and basic settings.",
+    description:
+      "Get Discord server overview: name, member count, channel count, role count, and basic settings.",
     inputSchema: z.object({}),
     execute: async () => {
       const fetched = await guild.fetch();
@@ -257,7 +269,9 @@ export function createSearchMembersTool(guild: Guild) {
   return tool({
     description: "Search for server members by name, nickname, or user ID.",
     inputSchema: z.object({
-      query: z.string().describe("Search query (matches username, display name, nickname, or a user ID)"),
+      query: z
+        .string()
+        .describe("Search query (matches username, display name, nickname, or a user ID)"),
       limit: z.number().max(100).default(10).describe("Max results (max 100)"),
     }),
     execute: async ({ query, limit }) => {
@@ -285,20 +299,49 @@ export function createCreateChannelTool(guild: Guild, perms: Permissions) {
     description: "Create a new channel in the Discord server.",
     inputSchema: z.object({
       name: z.string().describe("Channel name"),
-      type: z.enum(["text", "voice", "category", "announcement", "forum", "stage"]).default("text").describe("Channel type"),
+      type: z
+        .enum(["text", "voice", "category", "announcement", "forum", "stage"])
+        .default("text")
+        .describe("Channel type"),
       topic: z.string().optional().describe("Channel topic (text channels only)"),
       parent_id: z.string().optional().describe("Parent category ID"),
       nsfw: z.boolean().optional().describe("Whether the channel is NSFW"),
       slowmode: z.number().optional().describe("Slowmode delay in seconds (0 to disable)"),
       position: z.number().optional().describe("Channel position within its category"),
-      bitrate: z.number().optional().describe("Bitrate in bits/sec for voice channels (e.g. 64000)"),
+      bitrate: z
+        .number()
+        .optional()
+        .describe("Bitrate in bits/sec for voice channels (e.g. 64000)"),
       user_limit: z.number().optional().describe("Max users for voice channels (0 for unlimited)"),
       rtc_region: z.string().optional().describe("Voice region override for voice channels"),
-      video_quality_mode: z.enum(["auto", "full"]).optional().describe("Video quality mode for voice channels"),
-      default_auto_archive_duration: z.enum(["60", "1440", "4320", "10080"]).optional().describe("Default auto-archive duration for new threads (minutes)"),
-      default_thread_slowmode: z.number().optional().describe("Default slowmode for new threads in seconds (0 to disable)"),
+      video_quality_mode: z
+        .enum(["auto", "full"])
+        .optional()
+        .describe("Video quality mode for voice channels"),
+      default_auto_archive_duration: z
+        .enum(["60", "1440", "4320", "10080"])
+        .optional()
+        .describe("Default auto-archive duration for new threads (minutes)"),
+      default_thread_slowmode: z
+        .number()
+        .optional()
+        .describe("Default slowmode for new threads in seconds (0 to disable)"),
     }),
-    execute: async ({ name, type, topic, parent_id, nsfw, slowmode, position, bitrate, user_limit, rtc_region, video_quality_mode, default_auto_archive_duration, default_thread_slowmode }) => {
+    execute: async ({
+      name,
+      type,
+      topic,
+      parent_id,
+      nsfw,
+      slowmode,
+      position,
+      bitrate,
+      user_limit,
+      rtc_region,
+      video_quality_mode,
+      default_auto_archive_duration,
+      default_thread_slowmode,
+    }) => {
       if (parent_id) {
         const category = await guild.channels.fetch(parent_id);
         if (!category) return json({ error: "Parent category not found" });
@@ -320,8 +363,12 @@ export function createCreateChannelTool(guild: Guild, perms: Permissions) {
         ...(user_limit !== undefined && { userLimit: user_limit }),
         ...(rtc_region && { rtcRegion: rtc_region }),
         ...(video_quality_mode && { videoQualityMode: video_quality_mode === "full" ? 2 : 1 }),
-        ...(default_auto_archive_duration && { defaultAutoArchiveDuration: Number(default_auto_archive_duration) }),
-        ...(default_thread_slowmode !== undefined && { defaultThreadRateLimitPerUser: default_thread_slowmode }),
+        ...(default_auto_archive_duration && {
+          defaultAutoArchiveDuration: Number(default_auto_archive_duration),
+        }),
+        ...(default_thread_slowmode !== undefined && {
+          defaultThreadRateLimitPerUser: default_thread_slowmode,
+        }),
       });
       return json(summarizeChannel(channel));
     },
@@ -335,18 +382,52 @@ export function createEditChannelTool(guild: Guild, perms: Permissions) {
       channel_id: z.string().describe("Channel ID"),
       name: z.string().optional().describe("New channel name"),
       topic: z.string().optional().describe("New channel topic"),
-      parent_id: z.string().nullable().optional().describe("New parent category ID (null to remove from category)"),
+      parent_id: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("New parent category ID (null to remove from category)"),
       nsfw: z.boolean().optional().describe("Whether the channel is NSFW"),
       slowmode: z.number().optional().describe("Slowmode delay in seconds (0 to disable)"),
       position: z.number().optional().describe("New position"),
-      bitrate: z.number().optional().describe("Bitrate in bits/sec for voice channels (e.g. 64000)"),
+      bitrate: z
+        .number()
+        .optional()
+        .describe("Bitrate in bits/sec for voice channels (e.g. 64000)"),
       user_limit: z.number().optional().describe("Max users for voice channels (0 for unlimited)"),
-      rtc_region: z.string().nullable().optional().describe("Voice region override for voice channels (null for automatic)"),
-      video_quality_mode: z.enum(["auto", "full"]).optional().describe("Video quality mode for voice channels"),
-      default_auto_archive_duration: z.enum(["60", "1440", "4320", "10080"]).optional().describe("Default auto-archive duration for new threads (minutes)"),
-      default_thread_slowmode: z.number().optional().describe("Default slowmode for new threads in seconds (0 to disable)"),
+      rtc_region: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("Voice region override for voice channels (null for automatic)"),
+      video_quality_mode: z
+        .enum(["auto", "full"])
+        .optional()
+        .describe("Video quality mode for voice channels"),
+      default_auto_archive_duration: z
+        .enum(["60", "1440", "4320", "10080"])
+        .optional()
+        .describe("Default auto-archive duration for new threads (minutes)"),
+      default_thread_slowmode: z
+        .number()
+        .optional()
+        .describe("Default slowmode for new threads in seconds (0 to disable)"),
     }),
-    execute: async ({ channel_id, name, topic, parent_id, nsfw, slowmode, position, bitrate, user_limit, rtc_region, video_quality_mode, default_auto_archive_duration, default_thread_slowmode }) => {
+    execute: async ({
+      channel_id,
+      name,
+      topic,
+      parent_id,
+      nsfw,
+      slowmode,
+      position,
+      bitrate,
+      user_limit,
+      rtc_region,
+      video_quality_mode,
+      default_auto_archive_duration,
+      default_thread_slowmode,
+    }) => {
       const channel = await guild.channels.fetch(channel_id);
       if (!channel) return json({ error: "Channel not found" });
       const denied = perms.channel(channel, PermissionFlagsBits.ManageChannels);
@@ -362,8 +443,12 @@ export function createEditChannelTool(guild: Guild, perms: Permissions) {
         ...(user_limit !== undefined && { userLimit: user_limit }),
         ...(rtc_region !== undefined && { rtcRegion: rtc_region }),
         ...(video_quality_mode && { videoQualityMode: video_quality_mode === "full" ? 2 : 1 }),
-        ...(default_auto_archive_duration && { defaultAutoArchiveDuration: Number(default_auto_archive_duration) }),
-        ...(default_thread_slowmode !== undefined && { defaultThreadRateLimitPerUser: default_thread_slowmode }),
+        ...(default_auto_archive_duration && {
+          defaultAutoArchiveDuration: Number(default_auto_archive_duration),
+        }),
+        ...(default_thread_slowmode !== undefined && {
+          defaultThreadRateLimitPerUser: default_thread_slowmode,
+        }),
       });
       return json(summarizeChannel(edited as NonThreadGuildBasedChannel));
     },
@@ -493,7 +578,10 @@ export function createFetchMessagesTool(guild: Guild, perms: Permissions) {
     inputSchema: z.object({
       channel_id: z.string().describe("Channel ID"),
       limit: z.number().max(100).default(25).describe("Number of messages to fetch (max 100)"),
-      before: z.string().optional().describe("Fetch messages before this message ID (for pagination)"),
+      before: z
+        .string()
+        .optional()
+        .describe("Fetch messages before this message ID (for pagination)"),
       after: z.string().optional().describe("Fetch messages after this message ID"),
     }),
     execute: async ({ channel_id, limit, before, after }) => {
@@ -538,7 +626,10 @@ export function createCreateRoleTool(guild: Guild, perms: Permissions) {
       mentionable: z.boolean().optional().describe("Allow anyone to mention this role"),
       position: z.number().optional().describe("Role position (higher = more authority)"),
       icon: z.string().optional().describe("Role icon image URL (requires server boost level 2+)"),
-      unicode_emoji: z.string().optional().describe("Unicode emoji for the role icon (alternative to image icon)"),
+      unicode_emoji: z
+        .string()
+        .optional()
+        .describe("Unicode emoji for the role icon (alternative to image icon)"),
     }),
     execute: async ({ name, color, hoist, mentionable, position, icon, unicode_emoji }) => {
       const denied = perms.server(PermissionFlagsBits.ManageRoles);
@@ -567,10 +658,27 @@ export function createEditRoleTool(guild: Guild, perms: Permissions) {
       hoist: z.boolean().optional().describe("Display separately in sidebar"),
       mentionable: z.boolean().optional().describe("Allow mentioning"),
       position: z.number().optional().describe("New position"),
-      icon: z.string().nullable().optional().describe("Role icon image URL (requires server boost level 2+, null to remove)"),
-      unicode_emoji: z.string().nullable().optional().describe("Unicode emoji for the role icon (alternative to image icon, null to remove)"),
+      icon: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("Role icon image URL (requires server boost level 2+, null to remove)"),
+      unicode_emoji: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("Unicode emoji for the role icon (alternative to image icon, null to remove)"),
     }),
-    execute: async ({ role_id, name, color, hoist, mentionable, position, icon, unicode_emoji }) => {
+    execute: async ({
+      role_id,
+      name,
+      color,
+      hoist,
+      mentionable,
+      position,
+      icon,
+      unicode_emoji,
+    }) => {
       const denied = perms.server(PermissionFlagsBits.ManageRoles);
       if (denied) return denied;
       const role = await guild.roles.fetch(role_id);
@@ -586,7 +694,12 @@ export function createEditRoleTool(guild: Guild, perms: Permissions) {
         ...(icon !== undefined && { icon }),
         ...(unicode_emoji !== undefined && { unicodeEmoji: unicode_emoji }),
       });
-      return json({ id: edited.id, name: edited.name, color: edited.hexColor, position: edited.position });
+      return json({
+        id: edited.id,
+        name: edited.name,
+        color: edited.hexColor,
+        position: edited.position,
+      });
     },
   });
 }
@@ -703,12 +816,16 @@ export function createListWebhooksTool(guild: Guild, perms: Permissions) {
   return tool({
     description: "List all webhooks in the server or a specific channel.",
     inputSchema: z.object({
-      channel_id: z.string().optional().describe("Channel ID to filter by (omit for all server webhooks)"),
+      channel_id: z
+        .string()
+        .optional()
+        .describe("Channel ID to filter by (omit for all server webhooks)"),
     }),
     execute: async ({ channel_id }) => {
       if (channel_id) {
         const channel = await guild.channels.fetch(channel_id);
-        if (!channel || !("fetchWebhooks" in channel)) return json({ error: "Channel not found or does not support webhooks" });
+        if (!channel || !("fetchWebhooks" in channel))
+          return json({ error: "Channel not found or does not support webhooks" });
         const denied = perms.channel(channel, PermissionFlagsBits.ManageWebhooks);
         if (denied) return denied;
         const webhooks = await (channel as any).fetchWebhooks();
@@ -750,7 +867,8 @@ export function createCreateWebhookTool(guild: Guild, perms: Permissions) {
     }),
     execute: async ({ channel_id, name, avatar }) => {
       const channel = await guild.channels.fetch(channel_id);
-      if (!channel || !("createWebhook" in channel)) return json({ error: "Channel not found or does not support webhooks" });
+      if (!channel || !("createWebhook" in channel))
+        return json({ error: "Channel not found or does not support webhooks" });
       const denied = perms.channel(channel, PermissionFlagsBits.ManageWebhooks);
       if (denied) return denied;
       const webhook = await (channel as any).createWebhook({ name, ...(avatar && { avatar }) });
@@ -850,13 +968,28 @@ export function createCreateEventTool(guild: Guild, perms: Permissions) {
       name: z.string().describe("Event name"),
       description: z.string().optional().describe("Event description"),
       scheduled_start: z.string().describe("Start time (ISO 8601 string)"),
-      scheduled_end: z.string().optional().describe("End time (ISO 8601 string, required for external events)"),
+      scheduled_end: z
+        .string()
+        .optional()
+        .describe("End time (ISO 8601 string, required for external events)"),
       type: z.enum(["voice", "stage", "external"]).default("external").describe("Event type"),
-      channel_id: z.string().optional().describe("Voice/stage channel ID (required for voice/stage events)"),
+      channel_id: z
+        .string()
+        .optional()
+        .describe("Voice/stage channel ID (required for voice/stage events)"),
       location: z.string().optional().describe("Location string (required for external events)"),
       image: z.string().optional().describe("Cover image URL"),
     }),
-    execute: async ({ name, description, scheduled_start, scheduled_end, type, channel_id, location, image }) => {
+    execute: async ({
+      name,
+      description,
+      scheduled_start,
+      scheduled_end,
+      type,
+      channel_id,
+      location,
+      image,
+    }) => {
       const denied = perms.server(PermissionFlagsBits.ManageEvents);
       if (denied) return denied;
       const entityTypeMap: Record<string, GuildScheduledEventEntityType> = {
@@ -898,15 +1031,37 @@ export function createEditEventTool(guild: Guild, perms: Permissions) {
       scheduled_end: z.string().optional().describe("New end time (ISO 8601)"),
       location: z.string().optional().describe("New location (external events only)"),
       image: z.string().optional().describe("New cover image URL"),
-      status: z.enum(["scheduled", "active", "completed", "canceled"]).optional().describe("New event status (e.g. 'active' to start, 'completed' or 'canceled' to end)"),
-      channel_id: z.string().nullable().optional().describe("Voice/stage channel ID (null to clear, for voice/stage events)"),
+      status: z
+        .enum(["scheduled", "active", "completed", "canceled"])
+        .optional()
+        .describe("New event status (e.g. 'active' to start, 'completed' or 'canceled' to end)"),
+      channel_id: z
+        .string()
+        .nullable()
+        .optional()
+        .describe("Voice/stage channel ID (null to clear, for voice/stage events)"),
     }),
-    execute: async ({ event_id, name, description, scheduled_start, scheduled_end, location, image, status, channel_id }) => {
+    execute: async ({
+      event_id,
+      name,
+      description,
+      scheduled_start,
+      scheduled_end,
+      location,
+      image,
+      status,
+      channel_id,
+    }) => {
       const denied = perms.server(PermissionFlagsBits.ManageEvents);
       if (denied) return denied;
       const event = await guild.scheduledEvents.fetch(event_id);
       if (!event) return json({ error: "Event not found" });
-      const statusMap: Record<string, number> = { scheduled: 1, active: 2, completed: 3, canceled: 4 };
+      const statusMap: Record<string, number> = {
+        scheduled: 1,
+        active: 2,
+        completed: 3,
+        canceled: 4,
+      };
       const edited = await event.edit({
         ...(name && { name }),
         ...(description !== undefined && { description }),
@@ -969,7 +1124,10 @@ export function createListThreadsTool(guild: Guild, perms: Permissions) {
   return tool({
     description: "List active and/or archived threads in the server or a specific channel.",
     inputSchema: z.object({
-      channel_id: z.string().optional().describe("Channel ID to list threads from (omit for all server threads)"),
+      channel_id: z
+        .string()
+        .optional()
+        .describe("Channel ID to list threads from (omit for all server threads)"),
       include_archived: z.boolean().default(false).describe("Include archived threads"),
     }),
     execute: async ({ channel_id, include_archived }) => {
@@ -978,7 +1136,8 @@ export function createListThreadsTool(guild: Guild, perms: Permissions) {
         if (!channel) return json({ error: "Channel not found" });
         const denied = perms.channel(channel, PermissionFlagsBits.ViewChannel);
         if (denied) return denied;
-        if (!("threads" in channel)) return json({ error: "This channel type does not support threads" });
+        if (!("threads" in channel))
+          return json({ error: "This channel type does not support threads" });
         const cached = [...channel.threads.cache.values()];
         const threads = cached.filter((t) => !t.archived).map(summarizeThread);
         if (include_archived) {
@@ -1000,21 +1159,47 @@ export function createCreateThreadTool(guild: Guild, perms: Permissions) {
     inputSchema: z.object({
       channel_id: z.string().describe("Channel ID to create the thread in"),
       name: z.string().describe("Thread name"),
-      message_id: z.string().optional().describe("Message ID to start the thread from (omit for standalone thread)"),
-      auto_archive_duration: z.enum(["60", "1440", "4320", "10080"]).optional().describe("Auto-archive after minutes of inactivity: 60 (1h), 1440 (1d), 4320 (3d), 10080 (7d)"),
-      type: z.enum(["public", "private"]).default("public").describe("Thread type (public or private)"),
+      message_id: z
+        .string()
+        .optional()
+        .describe("Message ID to start the thread from (omit for standalone thread)"),
+      auto_archive_duration: z
+        .enum(["60", "1440", "4320", "10080"])
+        .optional()
+        .describe(
+          "Auto-archive after minutes of inactivity: 60 (1h), 1440 (1d), 4320 (3d), 10080 (7d)",
+        ),
+      type: z
+        .enum(["public", "private"])
+        .default("public")
+        .describe("Thread type (public or private)"),
       slowmode: z.number().optional().describe("Slowmode delay in seconds (0 to disable)"),
-      invitable: z.boolean().optional().describe("Whether non-moderators can invite others (private threads only)"),
+      invitable: z
+        .boolean()
+        .optional()
+        .describe("Whether non-moderators can invite others (private threads only)"),
     }),
-    execute: async ({ channel_id, name, message_id, auto_archive_duration, type, slowmode, invitable }) => {
+    execute: async ({
+      channel_id,
+      name,
+      message_id,
+      auto_archive_duration,
+      type,
+      slowmode,
+      invitable,
+    }) => {
       const channel = await guild.channels.fetch(channel_id);
       if (!channel) return json({ error: "Channel not found" });
       const manageThreadsDenied = perms.channel(channel, PermissionFlagsBits.ManageThreads);
       const sendMessagesDenied = perms.channel(channel, PermissionFlagsBits.SendMessages);
       if (manageThreadsDenied && sendMessagesDenied) return manageThreadsDenied;
-      if (!channel.isTextBased() || channel.isThread()) return json({ error: "Cannot create a thread in this channel type" });
-      if (!("threads" in channel)) return json({ error: "This channel type does not support threads" });
-      const archiveDuration = auto_archive_duration ? (Number(auto_archive_duration) as 60 | 1440 | 4320 | 10080) : undefined;
+      if (!channel.isTextBased() || channel.isThread())
+        return json({ error: "Cannot create a thread in this channel type" });
+      if (!("threads" in channel))
+        return json({ error: "This channel type does not support threads" });
+      const archiveDuration = auto_archive_duration
+        ? (Number(auto_archive_duration) as 60 | 1440 | 4320 | 10080)
+        : undefined;
       const commonOpts = {
         ...(archiveDuration && { autoArchiveDuration: archiveDuration }),
         ...(slowmode !== undefined && { rateLimitPerUser: slowmode }),
@@ -1027,7 +1212,8 @@ export function createCreateThreadTool(guild: Guild, perms: Permissions) {
           ...commonOpts,
         });
       } else {
-        const threadType = type === "private" ? ChannelType.PrivateThread : ChannelType.PublicThread;
+        const threadType =
+          type === "private" ? ChannelType.PrivateThread : ChannelType.PublicThread;
         thread = await (channel.threads as any).create({
           name,
           type: threadType,
@@ -1042,17 +1228,35 @@ export function createCreateThreadTool(guild: Guild, perms: Permissions) {
 
 export function createEditThreadTool(guild: Guild, perms: Permissions) {
   return tool({
-    description: "Edit a thread's settings (name, archived, locked, auto-archive duration, slowmode, invitable).",
+    description:
+      "Edit a thread's settings (name, archived, locked, auto-archive duration, slowmode, invitable).",
     inputSchema: z.object({
       thread_id: z.string().describe("Thread ID"),
       name: z.string().optional().describe("New thread name"),
       archived: z.boolean().optional().describe("Archive or unarchive the thread"),
-      locked: z.boolean().optional().describe("Lock or unlock the thread (prevents non-moderators from unarchiving)"),
-      auto_archive_duration: z.enum(["60", "1440", "4320", "10080"]).optional().describe("Auto-archive after minutes of inactivity"),
+      locked: z
+        .boolean()
+        .optional()
+        .describe("Lock or unlock the thread (prevents non-moderators from unarchiving)"),
+      auto_archive_duration: z
+        .enum(["60", "1440", "4320", "10080"])
+        .optional()
+        .describe("Auto-archive after minutes of inactivity"),
       slowmode: z.number().optional().describe("Slowmode delay in seconds (0 to disable)"),
-      invitable: z.boolean().optional().describe("Whether non-moderators can invite others to the thread (private threads only)"),
+      invitable: z
+        .boolean()
+        .optional()
+        .describe("Whether non-moderators can invite others to the thread (private threads only)"),
     }),
-    execute: async ({ thread_id, name, archived, locked, auto_archive_duration, slowmode, invitable }) => {
+    execute: async ({
+      thread_id,
+      name,
+      archived,
+      locked,
+      auto_archive_duration,
+      slowmode,
+      invitable,
+    }) => {
       const thread = await guild.channels.fetch(thread_id);
       if (!thread || !thread.isThread()) return json({ error: "Thread not found" });
       const denied = perms.channel(thread, PermissionFlagsBits.ManageThreads);
@@ -1061,7 +1265,9 @@ export function createEditThreadTool(guild: Guild, perms: Permissions) {
         ...(name && { name }),
         ...(archived !== undefined && { archived }),
         ...(locked !== undefined && { locked }),
-        ...(auto_archive_duration && { autoArchiveDuration: Number(auto_archive_duration) as 60 | 1440 | 4320 | 10080 }),
+        ...(auto_archive_duration && {
+          autoArchiveDuration: Number(auto_archive_duration) as 60 | 1440 | 4320 | 10080,
+        }),
         ...(slowmode !== undefined && { rateLimitPerUser: slowmode }),
         ...(invitable !== undefined && { invitable }),
       });
@@ -1118,7 +1324,10 @@ export function createCreateEmojiTool(guild: Guild, perms: Permissions) {
     inputSchema: z.object({
       name: z.string().describe("Emoji name (2-32 characters, alphanumeric and underscores only)"),
       url: z.string().describe("Image URL for the emoji (PNG, JPG, or GIF; max 256KB)"),
-      roles: z.array(z.string()).optional().describe("Role IDs that can use this emoji (omit for everyone)"),
+      roles: z
+        .array(z.string())
+        .optional()
+        .describe("Role IDs that can use this emoji (omit for everyone)"),
     }),
     execute: async ({ name, url, roles }) => {
       const denied = perms.server(PermissionFlagsBits.ManageGuildExpressions);
@@ -1144,7 +1353,10 @@ export function createEditEmojiTool(guild: Guild, perms: Permissions) {
     inputSchema: z.object({
       emoji_id: z.string().describe("Emoji ID"),
       name: z.string().optional().describe("New emoji name"),
-      roles: z.array(z.string()).optional().describe("New role IDs that can use this emoji (empty array for everyone)"),
+      roles: z
+        .array(z.string())
+        .optional()
+        .describe("New role IDs that can use this emoji (empty array for everyone)"),
     }),
     execute: async ({ emoji_id, name, roles }) => {
       const denied = perms.server(PermissionFlagsBits.ManageGuildExpressions);
@@ -1212,7 +1424,11 @@ export function createCreateStickerTool(guild: Guild, perms: Permissions) {
       name: z.string().describe("Sticker name (2-30 characters)"),
       description: z.string().optional().describe("Sticker description"),
       tags: z.string().describe("Autocomplete/suggestion tag for the sticker (related emoji name)"),
-      url: z.string().describe("Image URL for the sticker (PNG, APNG, or Lottie JSON; max 512KB, 320x320 recommended)"),
+      url: z
+        .string()
+        .describe(
+          "Image URL for the sticker (PNG, APNG, or Lottie JSON; max 512KB, 320x320 recommended)",
+        ),
     }),
     execute: async ({ name, description, tags, url }) => {
       const denied = perms.server(PermissionFlagsBits.ManageGuildExpressions);

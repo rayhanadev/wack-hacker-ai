@@ -20,9 +20,10 @@ tools: list_events, create_event, edit_event, delete_event
 - Parse natural language dates relative to the current time. When unsure about timezone, ask.
 
 Common patterns:
+
 - "Create an event for Friday at 7pm" → create_event with type "external", ask for location
 - "Schedule a voice hangout" → create_event with type "voice", resolve channel_id
-</creating>
+  </creating>
 
 <editing>
 - edit_event can change name, description, start/end times, location, cover image, status, and channel.

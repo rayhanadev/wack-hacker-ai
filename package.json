@@ -1,17 +1,8 @@
 {
   "name": "ai-bot",
   "version": "0.1.0",
-  "devDependencies": {
-    "@factory/eslint-plugin": "latest",
-    "@types/bun": "latest",
-    "@types/marked": "^6.0.0",
-    "eslint": "latest",
-    "oxfmt": "latest",
-    "oxlint": "latest",
-    "oxlint-tsgolint": "latest",
-    "typescript": "^5"
-  },
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "bun src/index.ts",
     "start": "bun src/index.ts",
@@ -19,7 +10,6 @@
     "format": "oxfmt",
     "typecheck": "tsc --noEmit"
   },
-  "type": "module",
   "dependencies": {
     "@ai-sdk/groq": "^3.0.24",
     "@linear/sdk": "^75.0.0",
@@ -31,5 +21,15 @@
     "gray-matter": "^4.0.3",
     "marked": "^17.0.2",
     "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@factory/eslint-plugin": "latest",
+    "@types/bun": "latest",
+    "@types/marked": "^6.0.0",
+    "eslint": "latest",
+    "oxfmt": "latest",
+    "oxlint": "latest",
+    "oxlint-tsgolint": "latest",
+    "typescript": "^5"
   }
 }

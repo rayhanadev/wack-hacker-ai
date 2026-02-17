@@ -12,9 +12,10 @@ tools: create_comment, edit_comment, delete_comment
 </posting>
 
 <editing_deleting>
+
 - Editing/deleting typically only works for comments I created earlier in this thread.
 - Only delete when explicitly asked.
-</editing_deleting>
+  </editing_deleting>
 
 <formatting>
 - Markdown supported: **bold**, _italic_, `code`, lists, code blocks.

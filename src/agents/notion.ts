@@ -43,12 +43,17 @@ export function createNotionTool(userId: string, recentMessages?: string) {
       "Manage Notion pages, databases, and content. Searches, retrieves, creates, and updates pages, databases, and comments. Use for any docs/wiki/database/workspace-related request.",
     inputSchema: z.object({
       task: z.string().describe("The task to perform in Notion"),
-      attachments: z.array(attachmentSchema).optional().describe("File attachments from the user's message"),
+      attachments: z
+        .array(attachmentSchema)
+        .optional()
+        .describe("File attachments from the user's message"),
     }),
     execute: async ({ task, attachments }, { abortSignal }) => {
       const loadedSkills = new Set<string>();
       const baseInstructions = await loadSystemPrompt();
-      const instructions = recentMessages ? `${baseInstructions}\n\n${recentMessages}` : baseInstructions;
+      const instructions = recentMessages
+        ? `${baseInstructions}\n\n${recentMessages}`
+        : baseInstructions;
 
       const tools = {
         // Meta

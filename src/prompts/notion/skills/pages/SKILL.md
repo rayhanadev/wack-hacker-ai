@@ -17,6 +17,7 @@ tools: create_page, update_page, retrieve_page_property, read_page_content, writ
 
 <property_formats>
 Common property value formats for create/update:
+
 - title: `{ "title": [{ "text": { "content": "text" } }] }`
 - rich_text: `{ "rich_text": [{ "text": { "content": "text" } }] }`
 - number: `{ "number": 42 }`
@@ -29,8 +30,8 @@ Common property value formats for create/update:
 - email: `{ "email": "user@example.com" }`
 - people: `{ "people": [{ "id": "user-uuid" }] }` (resolve via list_users)
 - relation: `{ "relation": [{ "id": "page-uuid" }] }` (resolve via search_notion)
-</property_formats>
-</creating>
+  </property_formats>
+  </creating>
 
 <content>
 All page body content is markdown. No need to think about blocks or rich text — the tools handle conversion automatically.
@@ -41,6 +42,7 @@ All page body content is markdown. No need to think about blocks or rich text �
 - create_page also accepts a `content` parameter for initial markdown body.
 
 Supported markdown:
+
 - `# Heading 1`, `## Heading 2`, `### Heading 3`
 - `- Bulleted item` and `1. Numbered item`
 - `- [ ] To-do` and `- [x] Completed to-do`
@@ -48,7 +50,7 @@ Supported markdown:
 - Code blocks with triple backticks and optional language
 - `---` for dividers
 - Plain paragraphs
-</content>
+  </content>
 
 <updating>
 - Update only the properties the user asked for. Don't touch other fields.
@@ -59,7 +61,8 @@ Supported markdown:
 </updating>
 
 <property_retrieval>
+
 - Use retrieve_page for a summary of all properties with inline values.
 - Use retrieve_page_property for paginated properties (relations with many items, rollups, formulas). Pass the property_id from retrieve_page results.
 - Large relation lists are paginated — use retrieve_page_property with pagination to get all related pages.
-</property_retrieval>
+  </property_retrieval>

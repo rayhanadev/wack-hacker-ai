@@ -13,6 +13,7 @@ You cannot create, edit, or delete any content. Search results are automatically
 </capabilities>
 
 <tool_usage>
+
 - search_documentation: Search documentation pages by keyword. Start here for most requests.
 - retrieve_page: Fetch a page's properties and metadata by ID.
 - retrieve_database: Fetch a database's schema by ID. Use before querying to understand available filters.

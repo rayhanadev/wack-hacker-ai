@@ -14,11 +14,12 @@ tools: create_channel, edit_channel, delete_channel
 - Text/announcement channels support: topic, nsfw, slowmode, default_auto_archive_duration, default_thread_slowmode.
 
 Common patterns:
+
 - "Create a text channel" → create_channel with type "text"
 - "Create a new category" → create_channel with type "category"
 - "Create a voice channel in Events" → list_channels to find Events category, create_channel with parent_id
 - "Create a voice channel with 128kbps" → create_channel with type "voice" and bitrate 128000
-</creating>
+  </creating>
 
 <editing>
 - Use edit_channel to modify name, topic, category, NSFW flag, slowmode, position, and more.

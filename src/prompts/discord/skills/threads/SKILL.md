@@ -22,11 +22,12 @@ tools: list_threads, create_thread, edit_thread, delete_thread
 - Cannot create threads inside other threads.
 
 Common patterns:
+
 - "Create a thread in #general" → list_channels to find general's ID, create_thread with channel_id
 - "Start a thread from this message" → create_thread with channel_id and message_id
 - "Create a private thread" → create_thread with type "private"
 - "Create a private thread only mods can invite to" → create_thread with type "private" and invitable false
-</creating>
+  </creating>
 
 <editing>
 - Use edit_thread to modify name, archived status, locked status, auto-archive duration, slowmode, or invitable.

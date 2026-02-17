@@ -13,6 +13,7 @@ tools: create_issue, update_issue, delete_issue, query_issue_activity
 - If reproduction steps / expected vs actual / logs are provided, include them as-is (lightly cleaned up), but don't invent them.
 
 <field_setting>
+
 - Only set fields the user explicitly asked for or that are strongly implied (e.g., "make this urgent" -> priority Urgent).
 - Team: if user names a team, set it; otherwise leave unset unless you need it to resolve team-scoped settings.
 - Status:
@@ -29,7 +30,7 @@ tools: create_issue, update_issue, delete_issue, query_issue_activity
 - Priority: 0=None, 1=Urgent, 2=High, 3=Normal, 4=Low.
 - Relationships: only add "blocks/blocked by/related" if the user asked and you can resolve the referenced issues.
 - Customer request: create/attach when user explicitly frames it as customer feedback; ensure it maps to a specific customer.
-</field_setting>
+  </field_setting>
 
 <templates>
 - Don't apply templates unless the user asks or there's a clearly relevant standard template.

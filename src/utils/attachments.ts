@@ -1,10 +1,6 @@
 import { z } from "zod";
-
-export type AttachmentInfo = {
-  url: string;
-  name: string;
-  contentType: string;
-};
+import type { AttachmentInfo } from "./types";
+export type { AttachmentInfo } from "./types";
 
 /** Zod schema for attachment info, shared across subagent tool input schemas. */
 export const attachmentSchema = z.object({
@@ -33,7 +29,12 @@ export function buildPromptWithAttachments(text: string, attachments?: Attachmen
     if (att.contentType.startsWith("image/")) {
       parts.push({ type: "image", image: new URL(att.url), mediaType: att.contentType });
     } else {
-      parts.push({ type: "file", data: new URL(att.url), filename: att.name, mediaType: att.contentType });
+      parts.push({
+        type: "file",
+        data: new URL(att.url),
+        filename: att.name,
+        mediaType: att.contentType,
+      });
     }
   }
 

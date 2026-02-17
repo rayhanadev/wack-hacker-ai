@@ -6,12 +6,13 @@ tools: create_project, update_project, create_project_milestone, update_project_
 ---
 
 <creating_updating>
+
 - Only populate fields the user provided; don't invent scope, timelines, or owners.
 - If the user says "description" ambiguously, interpret whether they mean short summary vs long-form content based on length/format.
 - teamIds is required for creation. Resolve via suggest_property_values(field: "Issue.teamId").
 - Project states: planned, started, paused, completed, canceled.
 - Links should be relevant and minimal (spec doc, PRD, dashboard).
-</creating_updating>
+  </creating_updating>
 
 <milestones>
 - Must be attached to a specific project; if unclear, ask which project.

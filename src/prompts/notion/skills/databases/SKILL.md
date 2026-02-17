@@ -13,27 +13,35 @@ tools: query_database, create_database, update_database
 Filters use Notion's compound filter format:
 
 Single property filter:
+
 ```json
 { "property": "Status", "status": { "equals": "In Progress" } }
 ```
 
 AND compound:
+
 ```json
-{ "and": [
-  { "property": "Status", "status": { "equals": "Done" } },
-  { "property": "Priority", "select": { "equals": "High" } }
-] }
+{
+  "and": [
+    { "property": "Status", "status": { "equals": "Done" } },
+    { "property": "Priority", "select": { "equals": "High" } }
+  ]
+}
 ```
 
 OR compound:
+
 ```json
-{ "or": [
-  { "property": "Status", "status": { "equals": "In Progress" } },
-  { "property": "Status", "status": { "equals": "Not Started" } }
-] }
+{
+  "or": [
+    { "property": "Status", "status": { "equals": "In Progress" } },
+    { "property": "Status", "status": { "equals": "Not Started" } }
+  ]
+}
 ```
 
 Filter operators by property type:
+
 - title/rich_text: equals, does_not_equal, contains, does_not_contain, starts_with, ends_with, is_empty, is_not_empty
 - number: equals, does_not_equal, greater_than, less_than, greater_than_or_equal_to, less_than_or_equal_to, is_empty, is_not_empty
 - select: equals, does_not_equal, is_empty, is_not_empty
@@ -43,22 +51,24 @@ Filter operators by property type:
 - checkbox: equals, does_not_equal
 - people: contains, does_not_contain, is_empty, is_not_empty
 - relation: contains, does_not_contain, is_empty, is_not_empty
-</filter_syntax>
+  </filter_syntax>
 
 <sort_syntax>
 Sorts are an array of sort objects:
+
 ```json
 [
   { "property": "Created", "direction": "descending" },
   { "property": "Name", "direction": "ascending" }
 ]
 ```
+
 Built-in sorts: `{ "timestamp": "created_time", "direction": "descending" }`.
 </sort_syntax>
 
 - Pagination: use start_cursor from the response's next_cursor to fetch the next page.
 - Keep page_size reasonable (25-50). Only increase if the user needs all results.
-</querying>
+  </querying>
 
 <creating>
 - Databases must have a parent page. Search for the parent first.

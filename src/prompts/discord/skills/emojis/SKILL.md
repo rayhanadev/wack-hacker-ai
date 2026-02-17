@@ -17,9 +17,10 @@ tools: list_emojis, create_emoji, edit_emoji, delete_emoji, list_stickers, creat
 - Servers have emoji slots based on boost level. If creation fails due to limits, let the user know.
 
 Common patterns:
+
 - "Add an emoji called pepe from this URL" → create_emoji with name and url
 - "Create an emoji only usable by Admins" → list_roles to find Admin role ID, create_emoji with roles
-</creating>
+  </creating>
 
 <editing>
 - edit_emoji can change the emoji name or its role restrictions.
@@ -44,8 +45,9 @@ Common patterns:
 - Servers have sticker slots based on boost level.
 
 Common patterns:
+
 - "Add a sticker called wave from this image" → create_sticker with name, tags ("wave"), and url
-</creating>
+  </creating>
 
 <editing>
 - edit_sticker can change the sticker name, description, or autocomplete tag.

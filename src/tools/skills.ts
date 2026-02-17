@@ -83,9 +83,7 @@ export function createSkillSystem(config: SkillSystemConfig) {
         "Load a skill to enable its tools and guidance for this session. Call this BEFORE performing a task. Available skills: " +
         skillNames.join(", "),
       inputSchema: z.object({
-        skill: z
-          .enum(skillNames as [string, ...string[]])
-          .describe("The skill to load"),
+        skill: z.enum(skillNames as [string, ...string[]]).describe("The skill to load"),
       }),
       execute: async ({ skill }): Promise<string> => {
         const skills = await getSkills();

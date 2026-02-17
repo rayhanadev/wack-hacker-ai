@@ -65,13 +65,20 @@ async function loadSystemPrompt(): Promise<string> {
 }
 
 /** Create a subagent tool for Discord server management, scoped to a Discord message. */
-export function createDiscordTool(message: Message, approvalChannel: GuildTextBasedChannel, recentMessages?: string) {
+export function createDiscordTool(
+  message: Message,
+  approvalChannel: GuildTextBasedChannel,
+  recentMessages?: string,
+) {
   return tool({
     description:
       "Manage the Discord server: channels, roles, members, messages, webhooks, scheduled events, threads, and emojis/stickers. Use for any server administration or Discord-related request.",
     inputSchema: z.object({
       task: z.string().describe("The user's original message, forwarded verbatim"),
-      attachments: z.array(attachmentSchema).optional().describe("File attachments from the user's message"),
+      attachments: z
+        .array(attachmentSchema)
+        .optional()
+        .describe("File attachments from the user's message"),
     }),
     execute: async ({ task, attachments }, { abortSignal }) => {
       const guild = message.guild;
@@ -93,7 +100,10 @@ export function createDiscordTool(message: Message, approvalChannel: GuildTextBa
         `  id: "${message.channel.id}"`,
         "```",
       ].join("\n");
-      const contextParts = [baseInstructions, `<execution_context>\n${executionContext}\n</execution_context>`];
+      const contextParts = [
+        baseInstructions,
+        `<execution_context>\n${executionContext}\n</execution_context>`,
+      ];
       if (recentMessages) contextParts.push(recentMessages);
       const instructions = contextParts.join("\n\n");
 
@@ -113,10 +123,18 @@ export function createDiscordTool(message: Message, approvalChannel: GuildTextBa
         // Channel tools
         create_channel: createCreateChannelTool(guild, perms),
         edit_channel: createEditChannelTool(guild, perms),
-        delete_channel: withApproval(createDeleteChannelTool(guild, perms), approvalCtx, (input) => `Delete Channel <#${input.channel_id}>`),
+        delete_channel: withApproval(
+          createDeleteChannelTool(guild, perms),
+          approvalCtx,
+          (input) => `Delete Channel <#${String(input.channel_id)}>`,
+        ),
         // Message tools
         send_message: createSendMessageTool(guild, perms),
-        delete_message: withApproval(createDeleteMessageTool(guild, perms), approvalCtx, (input) => `Delete Message ${input.message_id} in <#${input.channel_id}>`),
+        delete_message: withApproval(
+          createDeleteMessageTool(guild, perms),
+          approvalCtx,
+          (input) => `Delete Message ${String(input.message_id)} in <#${String(input.channel_id)}>`,
+        ),
         pin_message: createPinMessageTool(guild, perms),
         unpin_message: createUnpinMessageTool(guild, perms),
         add_reaction: createAddReactionTool(guild, perms),
@@ -124,7 +142,11 @@ export function createDiscordTool(message: Message, approvalChannel: GuildTextBa
         // Role tools
         create_role: createCreateRoleTool(guild, perms),
         edit_role: createEditRoleTool(guild, perms),
-        delete_role: withApproval(createDeleteRoleTool(guild, perms), approvalCtx, (input) => `Delete Role <@&${input.role_id}>`),
+        delete_role: withApproval(
+          createDeleteRoleTool(guild, perms),
+          approvalCtx,
+          (input) => `Delete Role <@&${String(input.role_id)}>`,
+        ),
         assign_role: createAssignRoleTool(guild, perms),
         remove_role: createRemoveRoleTool(guild, perms),
         // Member tools
@@ -133,28 +155,48 @@ export function createDiscordTool(message: Message, approvalChannel: GuildTextBa
         // Webhook tools
         list_webhooks: createListWebhooksTool(guild, perms),
         create_webhook: createCreateWebhookTool(guild, perms),
-        delete_webhook: withApproval(createDeleteWebhookTool(guild, perms), approvalCtx, (input) => `Delete Webhook ${input.webhook_id}`),
+        delete_webhook: withApproval(
+          createDeleteWebhookTool(guild, perms),
+          approvalCtx,
+          (input) => `Delete Webhook ${String(input.webhook_id)}`,
+        ),
         edit_webhook: createEditWebhookTool(guild, perms),
         // Event tools
         list_events: createListEventsTool(guild),
         create_event: createCreateEventTool(guild, perms),
         edit_event: createEditEventTool(guild, perms),
-        delete_event: withApproval(createDeleteEventTool(guild, perms), approvalCtx, (input) => `Delete Event ${input.event_id}`),
+        delete_event: withApproval(
+          createDeleteEventTool(guild, perms),
+          approvalCtx,
+          (input) => `Delete Event ${String(input.event_id)}`,
+        ),
         // Thread tools
         list_threads: createListThreadsTool(guild, perms),
         create_thread: createCreateThreadTool(guild, perms),
         edit_thread: createEditThreadTool(guild, perms),
-        delete_thread: withApproval(createDeleteThreadTool(guild, perms), approvalCtx, (input) => `Delete Thread ${input.thread_id}`),
+        delete_thread: withApproval(
+          createDeleteThreadTool(guild, perms),
+          approvalCtx,
+          (input) => `Delete Thread ${String(input.thread_id)}`,
+        ),
         // Emoji tools
         list_emojis: createListEmojisTool(guild),
         create_emoji: createCreateEmojiTool(guild, perms),
         edit_emoji: createEditEmojiTool(guild, perms),
-        delete_emoji: withApproval(createDeleteEmojiTool(guild, perms), approvalCtx, (input) => `Delete Emoji ${input.emoji_id}`),
+        delete_emoji: withApproval(
+          createDeleteEmojiTool(guild, perms),
+          approvalCtx,
+          (input) => `Delete Emoji ${String(input.emoji_id)}`,
+        ),
         // Sticker tools
         list_stickers: createListStickersTool(guild),
         create_sticker: createCreateStickerTool(guild, perms),
         edit_sticker: createEditStickerTool(guild, perms),
-        delete_sticker: withApproval(createDeleteStickerTool(guild, perms), approvalCtx, (input) => `Delete Sticker ${input.sticker_id}`),
+        delete_sticker: withApproval(
+          createDeleteStickerTool(guild, perms),
+          approvalCtx,
+          (input) => `Delete Sticker ${String(input.sticker_id)}`,
+        ),
       };
 
       const subagent = new ToolLoopAgent({

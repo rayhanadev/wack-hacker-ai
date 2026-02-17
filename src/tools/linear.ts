@@ -21,35 +21,31 @@ const linear = new LinearClient({ apiKey: env.LINEAR_API_KEY });
 // Skills
 // ---------------------------------------------------------------------------
 
-export const {
-  getBaseToolNames,
-  getSkillToolNames,
-  createLoadSkillTool,
-  resolveSystemPrompt,
-} = createSkillSystem({
-  skillsDir: join(import.meta.dir, "../prompts/linear/skills"),
-  skillNames: [
-    "issues",
-    "issue-views",
-    "projects",
-    "project-views",
-    "project-updates",
-    "initiatives",
-    "initiative-updates",
-    "documents",
-    "reminders",
-    "comments",
-    "media-transcription",
-    "customer-requests",
-  ],
-  baseToolNames: [
-    "load_skill",
-    "search_entities",
-    "retrieve_entities",
-    "suggest_property_values",
-    "aggregate_issues",
-  ],
-});
+export const { getBaseToolNames, getSkillToolNames, createLoadSkillTool, resolveSystemPrompt } =
+  createSkillSystem({
+    skillsDir: join(import.meta.dir, "../prompts/linear/skills"),
+    skillNames: [
+      "issues",
+      "issue-views",
+      "projects",
+      "project-views",
+      "project-updates",
+      "initiatives",
+      "initiative-updates",
+      "documents",
+      "reminders",
+      "comments",
+      "media-transcription",
+      "customer-requests",
+    ],
+    baseToolNames: [
+      "load_skill",
+      "search_entities",
+      "retrieve_entities",
+      "suggest_property_values",
+      "aggregate_issues",
+    ],
+  });
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -100,7 +96,9 @@ export const searchEntities = tool({
     switch (entityType) {
       case "Issue": {
         const r = await linear.searchIssues(query);
-        return json(r.nodes.map((i) => ({ id: i.id, identifier: i.identifier, title: i.title, url: i.url })));
+        return json(
+          r.nodes.map((i) => ({ id: i.id, identifier: i.identifier, title: i.title, url: i.url })),
+        );
       }
       case "Project": {
         const r = await linear.searchProjects(query);
@@ -114,13 +112,19 @@ export const searchEntities = tool({
         const r = await linear.initiatives();
         return json(
           r.nodes
-            .filter((i) => i.name.toLowerCase().includes(q) || i.description?.toLowerCase().includes(q))
+            .filter(
+              (i) => i.name.toLowerCase().includes(q) || i.description?.toLowerCase().includes(q),
+            )
             .map((i) => ({ id: i.id, name: i.name, status: i.status, url: i.url })),
         );
       }
       case "User": {
         const r = await linear.users();
-        return json(r.nodes.filter((u) => u.name.toLowerCase().includes(q)).map((u) => ({ id: u.id, name: u.name, email: u.email })));
+        return json(
+          r.nodes
+            .filter((u) => u.name.toLowerCase().includes(q))
+            .map((u) => ({ id: u.id, name: u.name, email: u.email })),
+        );
       }
       case "Team": {
         const r = await linear.teams();
@@ -132,11 +136,19 @@ export const searchEntities = tool({
       }
       case "Customer": {
         const r = await linear.customers();
-        return json(r.nodes.filter((c) => c.name.toLowerCase().includes(q)).map((c) => ({ id: c.id, name: c.name })));
+        return json(
+          r.nodes
+            .filter((c) => c.name.toLowerCase().includes(q))
+            .map((c) => ({ id: c.id, name: c.name })),
+        );
       }
       case "IssueLabel": {
         const r = await linear.issueLabels();
-        return json(r.nodes.filter((l) => l.name.toLowerCase().includes(q)).map((l) => ({ id: l.id, name: l.name })));
+        return json(
+          r.nodes
+            .filter((l) => l.name.toLowerCase().includes(q))
+            .map((l) => ({ id: l.id, name: l.name })),
+        );
       }
     }
   },
@@ -161,22 +173,47 @@ export const retrieveEntities = tool({
           case "Issue": {
             const i = await linear.issue(id);
             const [state, assignee, team, project, labels] = await Promise.all([
-              i.state, i.assignee, i.team, i.project, i.labels(),
+              i.state,
+              i.assignee,
+              i.team,
+              i.project,
+              i.labels(),
             ]);
             return {
-              id: i.id, identifier: i.identifier, title: i.title, description: i.description,
-              priority: i.priority, dueDate: i.dueDate, url: i.url,
-              state: state?.name, assignee: assignee?.name, team: team?.name,
-              project: project?.name, labels: labels.nodes.map((l) => l.name),
+              id: i.id,
+              identifier: i.identifier,
+              title: i.title,
+              description: i.description,
+              priority: i.priority,
+              dueDate: i.dueDate,
+              url: i.url,
+              state: state?.name,
+              assignee: assignee?.name,
+              team: team?.name,
+              project: project?.name,
+              labels: labels.nodes.map((l) => l.name),
             };
           }
           case "Project": {
             const p = await linear.project(id);
-            const [lead, teams, milestones] = await Promise.all([p.lead, p.teams(), p.projectMilestones()]);
+            const [lead, teams, milestones] = await Promise.all([
+              p.lead,
+              p.teams(),
+              p.projectMilestones(),
+            ]);
             return {
-              id: p.id, name: p.name, description: p.description, state: p.state, url: p.url,
-              lead: lead?.name, teams: teams.nodes.map((t) => t.name),
-              milestones: milestones.nodes.map((m) => ({ id: m.id, name: m.name, targetDate: m.targetDate })),
+              id: p.id,
+              name: p.name,
+              description: p.description,
+              state: p.state,
+              url: p.url,
+              lead: lead?.name,
+              teams: teams.nodes.map((t) => t.name),
+              milestones: milestones.nodes.map((m) => ({
+                id: m.id,
+                name: m.name,
+                targetDate: m.targetDate,
+              })),
             };
           }
           case "Document": {
@@ -195,8 +232,13 @@ export const retrieveEntities = tool({
             const i = await linear.initiative(id);
             const owner = await i.owner;
             return {
-              id: i.id, name: i.name, description: i.description, status: i.status,
-              targetDate: i.targetDate, url: i.url, owner: owner?.name,
+              id: i.id,
+              name: i.name,
+              description: i.description,
+              status: i.status,
+              targetDate: i.targetDate,
+              url: i.url,
+              owner: owner?.name,
             };
           }
         }
@@ -371,8 +413,17 @@ export const queryIssueActivityTool = tool({
     const issue = await linear.issue(id);
     const [history, comments] = await Promise.all([issue.history(), issue.comments()]);
     return json({
-      history: history.nodes.map((h) => ({ id: h.id, createdAt: h.createdAt, updatedDescription: h.updatedDescription })),
-      comments: comments.nodes.map((c) => ({ id: c.id, body: c.body?.slice(0, 500), createdAt: c.createdAt, url: c.url })),
+      history: history.nodes.map((h) => ({
+        id: h.id,
+        createdAt: h.createdAt,
+        updatedDescription: h.updatedDescription,
+      })),
+      comments: comments.nodes.map((c) => ({
+        id: c.id,
+        body: c.body?.slice(0, 500),
+        createdAt: c.createdAt,
+        url: c.url,
+      })),
     });
   },
 });
@@ -393,13 +444,21 @@ export const queryIssueViewTool = tool({
     first: z.number().optional().default(25).describe("Max 50"),
   }),
   execute: async ({ first, ...filters }) => {
-    const issues = await linear.issues({ filter: issueFilter(filters), first: Math.min(first, 50) });
+    const issues = await linear.issues({
+      filter: issueFilter(filters),
+      first: Math.min(first, 50),
+    });
     const results = await Promise.all(
       issues.nodes.map(async (i) => {
         const [state, assignee] = await Promise.all([i.state, i.assignee]);
         return {
-          id: i.id, identifier: i.identifier, title: i.title, priority: i.priorityLabel,
-          state: state?.name, assignee: assignee?.name, url: i.url,
+          id: i.id,
+          identifier: i.identifier,
+          title: i.title,
+          priority: i.priorityLabel,
+          state: state?.name,
+          assignee: assignee?.name,
+          url: i.url,
         };
       }),
     );
@@ -578,8 +637,18 @@ export const queryProjectActivityTool = tool({
     ]);
     return json({
       history: history.nodes.map((h) => ({ id: h.id, createdAt: h.createdAt })),
-      updates: updates.nodes.map((u) => ({ id: u.id, health: u.health, createdAt: u.createdAt, url: u.url })),
-      comments: comments.nodes.map((c) => ({ id: c.id, body: c.body?.slice(0, 500), createdAt: c.createdAt, url: c.url })),
+      updates: updates.nodes.map((u) => ({
+        id: u.id,
+        health: u.health,
+        createdAt: u.createdAt,
+        url: u.url,
+      })),
+      comments: comments.nodes.map((c) => ({
+        id: c.id,
+        body: c.body?.slice(0, 500),
+        createdAt: c.createdAt,
+        url: c.url,
+      })),
     });
   },
 });
@@ -624,7 +693,11 @@ export const queryProjectUpdatesTool = tool({
     const updates = await project.projectUpdates({ first });
     return json(
       updates.nodes.map((u) => ({
-        id: u.id, body: u.body?.slice(0, 1000), health: u.health, createdAt: u.createdAt, url: u.url,
+        id: u.id,
+        body: u.body?.slice(0, 1000),
+        health: u.health,
+        createdAt: u.createdAt,
+        url: u.url,
       })),
     );
   },
@@ -640,7 +713,9 @@ export const createProjectUpdateTool = tool({
   }),
   execute: async ({ projectId, body, health, isDiffHidden }) => {
     const payload = await linear.createProjectUpdate({
-      projectId, body, isDiffHidden,
+      projectId,
+      body,
+      isDiffHidden,
       health: health as ProjectUpdateHealthType | undefined,
     });
     const update = await payload.projectUpdate;
@@ -722,7 +797,15 @@ export const listInitiativesTool = tool({
   inputSchema: z.object({}),
   execute: async () => {
     const r = await linear.initiatives();
-    return json(r.nodes.map((i) => ({ id: i.id, name: i.name, status: i.status, targetDate: i.targetDate, url: i.url })));
+    return json(
+      r.nodes.map((i) => ({
+        id: i.id,
+        name: i.name,
+        status: i.status,
+        targetDate: i.targetDate,
+        url: i.url,
+      })),
+    );
   },
 });
 
@@ -751,7 +834,11 @@ export const queryInitiativeUpdatesTool = tool({
     const updates = await initiative.initiativeUpdates({ first });
     return json(
       updates.nodes.map((u) => ({
-        id: u.id, body: u.body?.slice(0, 1000), health: u.health, createdAt: u.createdAt, url: u.url,
+        id: u.id,
+        body: u.body?.slice(0, 1000),
+        health: u.health,
+        createdAt: u.createdAt,
+        url: u.url,
       })),
     );
   },
@@ -767,7 +854,9 @@ export const createInitiativeUpdateTool = tool({
   }),
   execute: async ({ initiativeId, body, health, isDiffHidden }) => {
     const payload = await linear.createInitiativeUpdate({
-      initiativeId, body, isDiffHidden,
+      initiativeId,
+      body,
+      isDiffHidden,
       health: health as InitiativeUpdateHealthType | undefined,
     });
     const update = await payload.initiativeUpdate;
@@ -867,7 +956,10 @@ export const transcribeMediaFromAttachment = tool({
   description: "Transcribe an audio/video attachment from its asset URL and return the transcript.",
   inputSchema: z.object({
     assetUrl: z.string().describe("The media file's asset URL"),
-    context: z.string().optional().describe("Extra info to help transcription (e.g., 'customer demo call about billing bug')"),
+    context: z
+      .string()
+      .optional()
+      .describe("Extra info to help transcription (e.g., 'customer demo call about billing bug')"),
   }),
   execute: async ({ assetUrl, context }) => {
     const result = await transcribe({

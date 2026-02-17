@@ -35,9 +35,7 @@ export async function createAgent(
   recentMessages?: string,
   organizerMode: boolean = false,
 ) {
-  const baseInstructions = organizerMode
-    ? await loadOrganizerPrompt()
-    : await loadPublicPrompt();
+  const baseInstructions = organizerMode ? await loadOrganizerPrompt() : await loadPublicPrompt();
 
   const userId = message.author.id;
   const userName = message.author.displayName ?? message.author.username;
@@ -50,7 +48,10 @@ export async function createAgent(
     `  id: "${message.channel.id}"`,
     "```",
   ].join("\n");
-  const parts = [baseInstructions, `<execution_context>\n${executionContext}\n</execution_context>`];
+  const parts = [
+    baseInstructions,
+    `<execution_context>\n${executionContext}\n</execution_context>`,
+  ];
   if (recentMessages) parts.push(recentMessages);
   const instructions = parts.join("\n\n");
 

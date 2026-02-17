@@ -202,7 +202,12 @@ const parseMarkdownToBlocks = (markdown: string): ReadonlyArray<MarkdownBlock> =
       case "heading": {
         const text = inlineTokensToText(token.tokens) || normalizeInlineText(token.text);
         if (text.length > 0) {
-          blocks.push(createMarkdownBlock(headingTypeFromLevel(Number.parseInt(String(token.depth), 10)), text));
+          blocks.push(
+            createMarkdownBlock(
+              headingTypeFromLevel(Number.parseInt(String(token.depth), 10)),
+              text,
+            ),
+          );
         }
         continue;
       }
@@ -224,7 +229,12 @@ const parseMarkdownToBlocks = (markdown: string): ReadonlyArray<MarkdownBlock> =
             blocks.push(createMarkdownBlock("to_do", itemText, item.checked ?? false));
             continue;
           }
-          blocks.push(createMarkdownBlock(token.ordered ? "numbered_list_item" : "bulleted_list_item", itemText));
+          blocks.push(
+            createMarkdownBlock(
+              token.ordered ? "numbered_list_item" : "bulleted_list_item",
+              itemText,
+            ),
+          );
         }
         continue;
       }
@@ -276,11 +286,23 @@ const toNotionBlocks = (blocks: ReadonlyArray<MarkdownBlock>): ReadonlyArray<Jso
       case "bulleted_list_item":
       case "numbered_list_item":
       case "quote":
-        return { object: "block", type: block.type, [block.type]: { rich_text: toRichTextItems(block.text) } };
+        return {
+          object: "block",
+          type: block.type,
+          [block.type]: { rich_text: toRichTextItems(block.text) },
+        };
       case "to_do":
-        return { object: "block", type: "to_do", to_do: { checked: block.checked, rich_text: toRichTextItems(block.text) } };
+        return {
+          object: "block",
+          type: "to_do",
+          to_do: { checked: block.checked, rich_text: toRichTextItems(block.text) },
+        };
       case "code":
-        return { object: "block", type: "code", code: { language: block.language, rich_text: toRichTextItems(block.text) } };
+        return {
+          object: "block",
+          type: "code",
+          code: { language: block.language, rich_text: toRichTextItems(block.text) },
+        };
       case "divider":
         return { object: "block", type: "divider", divider: {} };
     }
@@ -347,7 +369,10 @@ const fromNotionBlocks = (blocks: ReadonlyArray<JsonRecord>): ReadonlyArray<Mark
       default: {
         const payload = getRecord(block, blockType);
         const fallbackText = payload ? richTextToString(payload) : `[unsupported:${blockType}]`;
-        return createMarkdownBlock("paragraph", fallbackText.length > 0 ? fallbackText : `[${blockType}]`);
+        return createMarkdownBlock(
+          "paragraph",
+          fallbackText.length > 0 ? fallbackText : `[${blockType}]`,
+        );
       }
     }
   });
@@ -421,7 +446,9 @@ const renderBlockTreeNode = (node: BlockTreeNode, depth: number): string[] => {
     case "to_do": {
       const payload = getRecord(block, "to_do");
       const checked = payload ? Boolean(payload.checked) : false;
-      lines.push(`${"  ".repeat(depth)}- [${checked ? "x" : " "}] ${extractTextFromNotionBlock(block)}`.trimEnd());
+      lines.push(
+        `${"  ".repeat(depth)}- [${checked ? "x" : " "}] ${extractTextFromNotionBlock(block)}`.trimEnd(),
+      );
       break;
     }
     case "quote":

@@ -6,11 +6,12 @@ tools: set_reminder
 ---
 
 <time_handling>
+
 - Absolute date -> triggers at 9am in user's timezone.
 - Absolute datetime -> triggers at that exact time.
 - Duration ("in 2 hours") -> triggers relative to now.
 - Next weekday/week -> triggers next occurrence at 9am.
-</time_handling>
+  </time_handling>
 
 <behavior>
 - Only for the current user (can't set for teammates).

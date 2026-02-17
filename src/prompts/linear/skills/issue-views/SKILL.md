@@ -16,17 +16,19 @@ Available slices:
 </views>
 
 <list_mode>
+
 - Paginated (limit/skip); orderable (manual/updated/created/priority).
 - Best for: "show me the issues" / "what are the top 10" / "which ones are blocked?"
 - Returns: id, identifier, title, priority, state, assignee, URL.
-</list_mode>
+  </list_mode>
 
 <insight_mode>
+
 - Best for: "how many", "break down by...", "trend over time".
 - Typical aggregations: issue count by assignee, by priority, by label, by status, by week.
 - Use insight first when you need a quick distribution, then list mode to pull the specific outliers.
 - Output: CSV (dimension,count).
-</insight_mode>
+  </insight_mode>
 
 <filters>
 - Keep filters explicit and simple: "status is started", "priority is high", "created in the last 7 days".

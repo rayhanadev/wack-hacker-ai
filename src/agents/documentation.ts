@@ -54,10 +54,9 @@ async function isUnderDocumentationCollection(obj: any): Promise<boolean> {
 
     // Fetch the parent and continue walking up
     try {
-      current =
-        parent.database_id
-          ? await notion.databases.retrieve({ database_id: parentId })
-          : await notion.pages.retrieve({ page_id: parentId });
+      current = parent.database_id
+        ? await notion.databases.retrieve({ database_id: parentId })
+        : await notion.pages.retrieve({ page_id: parentId });
     } catch {
       return false; // parent inaccessible
     }
@@ -83,10 +82,15 @@ function richTextToPlain(rt: RichTextItem[]): string {
 
 /** Search scoped to documentation collections only. */
 const searchDocumentation = tool({
-  description: "Search Purdue Hackers documentation pages by keyword. Only returns results from the documentation collections.",
+  description:
+    "Search Purdue Hackers documentation pages by keyword. Only returns results from the documentation collections.",
   inputSchema: z.object({
     query: z.string().describe("Search keyword"),
-    page_size: z.number().optional().default(20).describe("Max results to fetch before filtering (max 100)"),
+    page_size: z
+      .number()
+      .optional()
+      .default(20)
+      .describe("Max results to fetch before filtering (max 100)"),
   }),
   execute: async ({ query, page_size }) => {
     const response = await notion.search({
@@ -94,7 +98,10 @@ const searchDocumentation = tool({
       page_size: Math.min(page_size, 100),
     });
     const checks = await Promise.all(
-      response.results.map(async (r) => ({ result: r, allowed: await isInDocumentationCollection(r) })),
+      response.results.map(async (r) => ({
+        result: r,
+        allowed: await isInDocumentationCollection(r),
+      })),
     );
     const filtered = checks.filter((c) => c.allowed).map((c) => c.result);
     return JSON.stringify(
@@ -135,11 +142,16 @@ export function createDocumentationTool(userId: string, recentMessages?: string)
       "Search and read Purdue Hackers documentation and workspace content from Notion. Use for any question about Purdue Hackers, events, projects, or documentation.",
     inputSchema: z.object({
       task: z.string().describe("The question or information request about Purdue Hackers"),
-      attachments: z.array(attachmentSchema).optional().describe("File attachments from the user's message"),
+      attachments: z
+        .array(attachmentSchema)
+        .optional()
+        .describe("File attachments from the user's message"),
     }),
     execute: async ({ task, attachments }, { abortSignal }) => {
       const baseInstructions = await loadSystemPrompt();
-      const instructions = recentMessages ? `${baseInstructions}\n\n${recentMessages}` : baseInstructions;
+      const instructions = recentMessages
+        ? `${baseInstructions}\n\n${recentMessages}`
+        : baseInstructions;
 
       const tools = {
         search_documentation: searchDocumentation,
