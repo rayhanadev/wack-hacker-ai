@@ -38,7 +38,7 @@ async function loadSystemPrompt(): Promise<string> {
 }
 
 /** Create a subagent tool for Notion workspace management, scoped to a Discord user. */
-export function createNotionTool(userId: string) {
+export function createNotionTool(userId: string, recentMessages?: string) {
   return tool({
   description:
     "Manage Notion pages, databases, and content. Searches, retrieves, creates, and updates pages, databases, and comments. Use for any docs/wiki/database/workspace-related request.",
@@ -47,7 +47,8 @@ export function createNotionTool(userId: string) {
   }),
   execute: async ({ task }, { abortSignal }) => {
     const loadedSkills = new Set<string>();
-    const instructions = await loadSystemPrompt();
+    const baseInstructions = await loadSystemPrompt();
+    const instructions = recentMessages ? `${baseInstructions}\n\n${recentMessages}` : baseInstructions;
 
     const tools = {
       // Meta

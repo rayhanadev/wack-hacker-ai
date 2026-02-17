@@ -83,7 +83,7 @@ Rules:
 - Each invocation is a fresh execution. You have no persistent memory across threads or sessions.
 - The `<execution_context>` block at the end of this prompt contains the requesting user's identity and channel. Use `user.id` to resolve "me", "myself", or "my" references — never use search_members to guess the requesting user's identity.
 - When the request mentions other users by name or Discord mention (e.g. `<@123456789>`), use search_members to resolve them. Be careful to distinguish the requesting user from other mentioned users.
-- If context from earlier in the thread would help, the parent agent can fetch it via discord_history. You may not have full thread history by default.
+- You may not have full thread history by default — recent messages are provided as context when available.
 </context>
 
 <skill_usage>

@@ -29,6 +29,7 @@ import {
   searchEntities,
   setReminderTool,
   suggestPropertyValues,
+  transcribeMediaFromAttachment,
   updateCustomerNeedTool,
   updateDocumentTool,
   updateInitiativeTool,
@@ -57,7 +58,7 @@ async function loadSystemPrompt(): Promise<string> {
 }
 
 /** Create a subagent tool for Linear project management, scoped to a Discord user. */
-export function createLinearTool(userId: string) {
+export function createLinearTool(userId: string, recentMessages?: string) {
   return tool({
   description:
     "Interact with Linear for project management. Searches, retrieves, creates, and updates issues, projects, documents, comments, cycles, initiatives, customer requests, labels, teams, and users. Use for any task/ticket/issue/sprint/project-related request.",
@@ -66,7 +67,8 @@ export function createLinearTool(userId: string) {
   }),
   execute: async ({ task }, { abortSignal }) => {
     const loadedSkills = new Set<string>();
-    const instructions = await loadSystemPrompt();
+    const baseInstructions = await loadSystemPrompt();
+    const instructions = recentMessages ? `${baseInstructions}\n\n${recentMessages}` : baseInstructions;
 
     const tools = {
       // Meta
@@ -115,6 +117,8 @@ export function createLinearTool(userId: string) {
       create_customer_need: createCustomerNeedTool,
       update_customer_need: updateCustomerNeedTool,
       list_customer_needs: listCustomerNeedsTool,
+      // Media transcription tools
+      transcribe_media_from_attachment: transcribeMediaFromAttachment,
     };
 
     const subagent = new ToolLoopAgent({

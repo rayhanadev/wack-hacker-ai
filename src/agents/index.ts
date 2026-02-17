@@ -2,7 +2,6 @@ import { ToolLoopAgent, stepCountIs, type ToolSet } from "ai";
 import type { GuildTextBasedChannel, Message } from "discord.js";
 import { join } from "node:path";
 import { createModel } from "../utils/model";
-import { createDiscordHistoryTool } from "../tools/discord";
 import { createDiscordTool } from "./discord";
 import { createDocumentationTool } from "./documentation";
 import { createLinearTool } from "./linear";
@@ -57,14 +56,12 @@ export async function createAgent(
 
   const tools: ToolSet = organizerMode
     ? {
-        linear: createLinearTool(userId),
-        notion: createNotionTool(userId),
-        discord: createDiscordTool(message, thread),
-        discord_history: createDiscordHistoryTool(message),
+        linear: createLinearTool(userId, recentMessages),
+        notion: createNotionTool(userId, recentMessages),
+        discord: createDiscordTool(message, thread, recentMessages),
       }
     : {
-        documentation: createDocumentationTool(userId),
-        discord_history: createDiscordHistoryTool(message),
+        documentation: createDocumentationTool(userId, recentMessages),
       };
 
   return new ToolLoopAgent({

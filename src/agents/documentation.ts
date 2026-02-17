@@ -128,7 +128,7 @@ async function loadSystemPrompt(): Promise<string> {
 }
 
 /** Create a read-only documentation subagent for querying Purdue Hackers info from Notion. */
-export function createDocumentationTool(userId: string) {
+export function createDocumentationTool(userId: string, recentMessages?: string) {
   return tool({
     description:
       "Search and read Purdue Hackers documentation and workspace content from Notion. Use for any question about Purdue Hackers, events, projects, or documentation.",
@@ -136,7 +136,8 @@ export function createDocumentationTool(userId: string) {
       task: z.string().describe("The question or information request about Purdue Hackers"),
     }),
     execute: async ({ task }, { abortSignal }) => {
-      const instructions = await loadSystemPrompt();
+      const baseInstructions = await loadSystemPrompt();
+      const instructions = recentMessages ? `${baseInstructions}\n\n${recentMessages}` : baseInstructions;
 
       const tools = {
         search_documentation: searchDocumentation,

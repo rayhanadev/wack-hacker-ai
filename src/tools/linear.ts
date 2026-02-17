@@ -4,7 +4,8 @@ import {
   type InitiativeUpdateHealthType,
   type ProjectUpdateHealthType,
 } from "@linear/sdk";
-import { tool } from "ai";
+import { experimental_transcribe as transcribe, tool } from "ai";
+import { groq } from "@ai-sdk/groq";
 import { join } from "node:path";
 import { z } from "zod";
 import { env } from "../env";
@@ -855,5 +856,33 @@ export const listCustomerNeedsTool = tool({
   execute: async () => {
     const r = await linear.customerNeeds();
     return json(r.nodes.map((n) => ({ id: n.id, priority: n.priority, createdAt: n.createdAt })));
+  },
+});
+
+// ---------------------------------------------------------------------------
+// Media transcription tools
+// ---------------------------------------------------------------------------
+
+export const transcribeMediaFromAttachment = tool({
+  description: "Transcribe an audio/video attachment from its asset URL and return the transcript.",
+  inputSchema: z.object({
+    assetUrl: z.string().describe("The media file's asset URL"),
+    context: z.string().optional().describe("Extra info to help transcription (e.g., 'customer demo call about billing bug')"),
+  }),
+  execute: async ({ assetUrl, context }) => {
+    const result = await transcribe({
+      model: groq.transcription("whisper-large-v3-turbo"),
+      audio: new URL(assetUrl),
+      providerOptions: {
+        groq: {
+          ...(context && { prompt: context }),
+        },
+      },
+    });
+    return json({
+      text: result.text,
+      durationInSeconds: result.durationInSeconds,
+      segments: result.segments,
+    });
   },
 });

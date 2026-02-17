@@ -2,16 +2,11 @@
 name: media-transcription
 description: Transcribe audio/video attachments and use the transcript to answer questions.
 criteria: Use when the user asks about media content, transcription, or shares audio/video.
-tools:
+tools: transcribe_media_from_attachment
 ---
 
-<limitations>
-Direct media transcription is not available in the Discord integration.
-</limitations>
+Use `transcribe_media_from_attachment` to transcribe audio or video files from their asset URL.
 
-<alternatives>
-- If the user asks about media content, acknowledge the limitation.
-- Suggest creating an issue to track transcription needs.
-- Add the media URL to an issue via create_comment or in the issue description.
-- Create a document with manual notes from the media if provided.
-</alternatives>
+- Pass the direct asset URL (e.g. from a Linear attachment or comment).
+- Optionally provide `context` with background info (names, topics, jargon) to improve transcription accuracy.
+- After receiving the transcript, use it to answer the user's question or summarize the content.

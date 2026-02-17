@@ -64,7 +64,7 @@ async function loadSystemPrompt(): Promise<string> {
 }
 
 /** Create a subagent tool for Discord server management, scoped to a Discord message. */
-export function createDiscordTool(message: Message, approvalChannel: GuildTextBasedChannel) {
+export function createDiscordTool(message: Message, approvalChannel: GuildTextBasedChannel, recentMessages?: string) {
   return tool({
     description:
       "Manage the Discord server: channels, roles, members, messages, webhooks, scheduled events, threads, and emojis/stickers. Use for any server administration or Discord-related request.",
@@ -91,7 +91,9 @@ export function createDiscordTool(message: Message, approvalChannel: GuildTextBa
         `  id: "${message.channel.id}"`,
         "```",
       ].join("\n");
-      const instructions = `${baseInstructions}\n\n<execution_context>\n${executionContext}\n</execution_context>`;
+      const contextParts = [baseInstructions, `<execution_context>\n${executionContext}\n</execution_context>`];
+      if (recentMessages) contextParts.push(recentMessages);
+      const instructions = contextParts.join("\n\n");
 
       const approvalCtx: ApprovalContext = {
         channel: approvalChannel,
