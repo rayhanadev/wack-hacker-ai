@@ -1,3 +1,4 @@
+import { smoothStream } from "ai";
 import type { Collection, Message } from "discord.js";
 import { createAgent } from "../agents/index";
 import { buildPromptWithAttachments, type AttachmentInfo } from "../utils/attachments";
@@ -6,6 +7,13 @@ import { isOrganizer } from "../utils/roles";
 const EDIT_INTERVAL_MS = 1500;
 const MAX_LENGTH = 2000;
 const CONTEXT_MESSAGE_COUNT = 5;
+
+const TOOL_LABELS: Record<string, string> = {
+  linear: "Linear",
+  notion: "Notion",
+  discord: "Discord",
+  documentation: "docs",
+};
 
 /** Format a single message as an XML element. */
 function formatMessage(m: Message, botMention: RegExp | null, tag = "message"): string {
@@ -85,26 +93,64 @@ export async function handleMessage(message: Message): Promise<void> {
     const recentMessages = await buildContext(message);
     const agent = await createAgent(message, thread, recentMessages || undefined, organizerMode);
     const promptInput = buildPromptWithAttachments(prompt, attachments);
-    const result = await agent.stream({ prompt: promptInput });
+    const result = await agent.stream({
+      prompt: promptInput,
+      experimental_transform: smoothStream(),
+    });
 
     let text = "";
     let reply: Message | null = null;
     let lastEdit = Date.now();
+    let toolCallCount = 0;
+    let needsNewline = false;
+    let statusLine = "";
+    const startTime = Date.now();
 
-    for await (const chunk of result.textStream) {
-      text += chunk;
+    for await (const part of result.fullStream) {
+      let shouldUpdate = false;
+
+      if (part.type === "text-delta") {
+        if (needsNewline && text.length > 0) {
+          text += "\n\n";
+          needsNewline = false;
+        }
+        text += part.text;
+        statusLine = "";
+        shouldUpdate = true;
+      } else if (part.type === "tool-call") {
+        toolCallCount++;
+        const label = TOOL_LABELS[part.toolName] ?? part.toolName;
+        statusLine = `\n-# ⏳ Using ${label}…`;
+        shouldUpdate = true;
+      } else if (part.type === "tool-result") {
+        needsNewline = true;
+        statusLine = "";
+        shouldUpdate = true;
+      }
+
+      if (!shouldUpdate) continue;
+
+      const displayText = (text + statusLine).slice(0, MAX_LENGTH);
+
       if (!reply) {
-        reply = await thread.send(text.slice(0, MAX_LENGTH));
+        reply = await thread.send(displayText);
         await message.reactions.removeAll();
         lastEdit = Date.now();
       } else if (Date.now() - lastEdit >= EDIT_INTERVAL_MS) {
-        await reply.edit(text.slice(0, MAX_LENGTH));
+        await reply.edit(displayText);
         lastEdit = Date.now();
       }
     }
 
+    const durationSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
+    const toolText =
+      toolCallCount > 0
+        ? ` · used ${toolCallCount} tool${toolCallCount !== 1 ? "s" : ""}`
+        : "";
+    const footer = `\n-# Thought for ${durationSec}s${toolText}`;
+
     if (reply) {
-      await reply.edit(text.slice(0, MAX_LENGTH) || "No response.");
+      await reply.edit((text + footer).slice(0, MAX_LENGTH) || "No response.");
     } else {
       await thread.send("No response.");
       await message.reactions.removeAll();
