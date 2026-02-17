@@ -7,6 +7,17 @@ const EDIT_INTERVAL_MS = 1500;
 const MAX_LENGTH = 2000;
 const CONTEXT_MESSAGE_COUNT = 5;
 
+/** Format a single message as an XML element. */
+function formatMessage(m: Message, botMention: RegExp | null, tag = "message"): string {
+  const name = m.author.displayName ?? m.author.username;
+  const content = botMention ? m.content.replace(botMention, "").trim() : m.content.trim();
+  const attachments =
+    m.attachments.size > 0
+      ? `\n${[...m.attachments.values()].map((a) => `    <attachment name="${a.name}" url="${a.url}" type="${a.contentType ?? "unknown"}" />`).join("\n")}`
+      : "";
+  return `  <${tag} author="${name}" bot="${m.author.bot}">${content}${attachments}</${tag}>`;
+}
+
 /** Fetch recent messages and format as XML context. */
 async function buildContext(message: Message): Promise<string> {
   const recent: Collection<string, Message> = await message.channel.messages.fetch({
@@ -15,20 +26,31 @@ async function buildContext(message: Message): Promise<string> {
   });
 
   const messages = [...recent.values()].reverse().slice(-CONTEXT_MESSAGE_COUNT);
-  if (messages.length === 0) return "";
 
   const botMention = message.client.user ? new RegExp(`<@!?${message.client.user.id}>`) : null;
-  const lines = messages.map((m) => {
-    const name = m.author.displayName ?? m.author.username;
-    const content = botMention ? m.content.replace(botMention, "").trim() : m.content.trim();
-    const attachments =
-      m.attachments.size > 0
-        ? `\n${[...m.attachments.values()].map((a) => `    <attachment name="${a.name}" url="${a.url}" type="${a.contentType ?? "unknown"}" />`).join("\n")}`
-        : "";
-    return `  <message author="${name}" bot="${m.author.bot}">${content}${attachments}</message>`;
-  });
 
-  return `<recent_messages>\n${lines.join("\n")}\n</recent_messages>`;
+  const parts: string[] = [];
+
+  // If the user replied to a specific message, include it as explicit context.
+  if (message.reference?.messageId) {
+    try {
+      const referenced =
+        messages.find((m) => m.id === message.reference!.messageId) ??
+        (await message.channel.messages.fetch(message.reference.messageId));
+      parts.push(
+        `<replied_to_message>\n${formatMessage(referenced, botMention, "message")}\n</replied_to_message>`,
+      );
+    } catch {
+      // Referenced message may have been deleted; ignore.
+    }
+  }
+
+  if (messages.length > 0) {
+    const lines = messages.map((m) => formatMessage(m, botMention));
+    parts.push(`<recent_messages>\n${lines.join("\n")}\n</recent_messages>`);
+  }
+
+  return parts.join("\n");
 }
 
 /** Handle incoming messages. Responds when the bot is mentioned. */
