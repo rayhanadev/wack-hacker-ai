@@ -1,6 +1,7 @@
 import { ToolLoopAgent, stepCountIs, tool } from "ai";
 import { join } from "node:path";
 import { z } from "zod";
+import { attachmentSchema, buildPromptWithAttachments } from "../utils/attachments";
 import { createModel } from "../utils/model";
 import {
   listComments,
@@ -134,8 +135,9 @@ export function createDocumentationTool(userId: string, recentMessages?: string)
       "Search and read Purdue Hackers documentation and workspace content from Notion. Use for any question about Purdue Hackers, events, projects, or documentation.",
     inputSchema: z.object({
       task: z.string().describe("The question or information request about Purdue Hackers"),
+      attachments: z.array(attachmentSchema).optional().describe("File attachments from the user's message"),
     }),
-    execute: async ({ task }, { abortSignal }) => {
+    execute: async ({ task, attachments }, { abortSignal }) => {
       const baseInstructions = await loadSystemPrompt();
       const instructions = recentMessages ? `${baseInstructions}\n\n${recentMessages}` : baseInstructions;
 
@@ -155,7 +157,8 @@ export function createDocumentationTool(userId: string, recentMessages?: string)
         tools,
         stopWhen: stepCountIs(10),
       });
-      const result = await subagent.generate({ prompt: task, abortSignal });
+      const prompt = buildPromptWithAttachments(task, attachments);
+      const result = await subagent.generate({ prompt, abortSignal });
       return result.text;
     },
   });

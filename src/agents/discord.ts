@@ -2,6 +2,7 @@ import { ToolLoopAgent, stepCountIs, tool } from "ai";
 import type { GuildTextBasedChannel, Message } from "discord.js";
 import { join } from "node:path";
 import { z } from "zod";
+import { attachmentSchema, buildPromptWithAttachments } from "../utils/attachments";
 import {
   createAddReactionTool,
   createAssignRoleTool,
@@ -19,12 +20,12 @@ import {
   createDeleteRoleTool,
   createDeleteStickerTool,
   createDeleteThreadTool,
-  createEditStickerTool,
   createDeleteWebhookTool,
   createEditChannelTool,
   createEditEmojiTool,
   createEditEventTool,
   createEditRoleTool,
+  createEditStickerTool,
   createEditThreadTool,
   createEditWebhookTool,
   createFetchMessagesTool,
@@ -70,8 +71,9 @@ export function createDiscordTool(message: Message, approvalChannel: GuildTextBa
       "Manage the Discord server: channels, roles, members, messages, webhooks, scheduled events, threads, and emojis/stickers. Use for any server administration or Discord-related request.",
     inputSchema: z.object({
       task: z.string().describe("The user's original message, forwarded verbatim"),
+      attachments: z.array(attachmentSchema).optional().describe("File attachments from the user's message"),
     }),
-    execute: async ({ task }, { abortSignal }) => {
+    execute: async ({ task, attachments }, { abortSignal }) => {
       const guild = message.guild;
       if (!guild) return "This command can only be used in a server.";
 
@@ -171,8 +173,8 @@ export function createDiscordTool(message: Message, approvalChannel: GuildTextBa
         },
         stopWhen: stepCountIs(15),
       });
-      const fullPrompt = task;
-      const result = await subagent.generate({ prompt: fullPrompt, abortSignal });
+      const prompt = buildPromptWithAttachments(task, attachments);
+      const result = await subagent.generate({ prompt, abortSignal });
       return result.text;
     },
   });

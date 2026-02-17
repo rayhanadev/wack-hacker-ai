@@ -18,6 +18,7 @@ Routing rules:
 
 When delegating:
 - Forward the user's original message as the task, verbatim. Do not paraphrase, rewrite, or summarize — subagents need the exact wording, including Discord mentions like `<@123456789>`.
+- If the user's message includes attachments (images, files, etc.), always forward them via the `attachments` parameter. Subagents can view images and process files directly.
 </delegation>
 
 <context>

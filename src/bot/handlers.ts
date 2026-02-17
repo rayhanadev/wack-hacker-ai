@@ -1,5 +1,6 @@
 import type { Collection, Message } from "discord.js";
 import { createAgent } from "../agents/index";
+import { buildPromptWithAttachments, type AttachmentInfo } from "../utils/attachments";
 import { isOrganizer } from "../utils/roles";
 
 const EDIT_INTERVAL_MS = 1500;
@@ -20,7 +21,11 @@ async function buildContext(message: Message): Promise<string> {
   const lines = messages.map((m) => {
     const name = m.author.displayName ?? m.author.username;
     const content = botMention ? m.content.replace(botMention, "").trim() : m.content.trim();
-    return `  <message author="${name}" bot="${m.author.bot}">${content}</message>`;
+    const attachments =
+      m.attachments.size > 0
+        ? `\n${[...m.attachments.values()].map((a) => `    <attachment name="${a.name}" url="${a.url}" type="${a.contentType ?? "unknown"}" />`).join("\n")}`
+        : "";
+    return `  <message author="${name}" bot="${m.author.bot}">${content}${attachments}</message>`;
   });
 
   return `<recent_messages>\n${lines.join("\n")}\n</recent_messages>`;
@@ -34,7 +39,12 @@ export async function handleMessage(message: Message): Promise<void> {
   if (!botUser || !message.mentions.has(botUser)) return;
 
   const prompt = message.content.replace(new RegExp(`<@!?${botUser.id}>`), "").trim();
-  if (!prompt) return;
+  const attachments: AttachmentInfo[] = [...message.attachments.values()].map((a) => ({
+    url: a.url,
+    name: a.name,
+    contentType: a.contentType ?? "application/octet-stream",
+  }));
+  if (!prompt && attachments.length === 0) return;
 
   const member = message.member ?? await message.guild?.members.fetch(message.author.id);
   if (!member) return;
@@ -45,12 +55,13 @@ export async function handleMessage(message: Message): Promise<void> {
 
   const thread = message.channel.isThread()
     ? message.channel
-    : await message.startThread({ name: prompt.slice(0, 100) });
+    : await message.startThread({ name: (prompt || `${attachments.length} attachment(s)`).slice(0, 100) });
 
   try {
     const recentMessages = await buildContext(message);
     const agent = await createAgent(message, thread, recentMessages || undefined, organizerMode);
-    const result = await agent.stream({ prompt });
+    const promptInput = buildPromptWithAttachments(prompt, attachments);
+    const result = await agent.stream({ prompt: promptInput });
 
     let text = "";
     let reply: Message | null = null;
