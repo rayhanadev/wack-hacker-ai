@@ -25,7 +25,9 @@ Common patterns:
 </creating>
 
 <editing>
-- edit_event can change name, description, start/end times, location, and cover image.
+- edit_event can change name, description, start/end times, location, cover image, status, and channel.
+- status transitions: "scheduled" → "active" (start the event), "active" → "completed" or "canceled".
+- channel_id can change the voice/stage channel for non-external events (null to clear).
 - Only modify the fields the user asked to change.
 - Cannot change an event's type after creation.
 </editing>

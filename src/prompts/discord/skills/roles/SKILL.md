@@ -11,12 +11,15 @@ tools: create_role, edit_role, delete_role, assign_role, remove_role
 - Hoist (true) displays role members in a separate sidebar section.
 - Position determines hierarchy — higher positions have more authority.
 - New roles are created at the bottom of the hierarchy by default.
+- icon sets a custom image as the role icon (requires server boost level 2+).
+- unicode_emoji sets a unicode emoji as the role icon (alternative to image icon). Cannot use both icon and unicode_emoji simultaneously.
 </creating>
 
 <editing>
 - Only modify the fields the user asked to change.
 - Changing a role's position affects the hierarchy. Higher = more authority.
 - Be cautious with position changes — they affect permission inheritance.
+- icon and unicode_emoji can be updated. Set to null to remove.
 </editing>
 
 <deleting>

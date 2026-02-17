@@ -6,24 +6,36 @@ import {
   createAddReactionTool,
   createAssignRoleTool,
   createCreateChannelTool,
+  createCreateEmojiTool,
   createCreateEventTool,
   createCreateRoleTool,
+  createCreateStickerTool,
+  createCreateThreadTool,
   createCreateWebhookTool,
   createDeleteChannelTool,
+  createDeleteEmojiTool,
   createDeleteEventTool,
   createDeleteMessageTool,
   createDeleteRoleTool,
+  createDeleteStickerTool,
+  createDeleteThreadTool,
+  createEditStickerTool,
   createDeleteWebhookTool,
   createEditChannelTool,
+  createEditEmojiTool,
   createEditEventTool,
   createEditRoleTool,
+  createEditThreadTool,
   createEditWebhookTool,
   createFetchMessagesTool,
   createGetMemberTool,
   createGetServerInfoTool,
   createListChannelsTool,
+  createListEmojisTool,
   createListEventsTool,
   createListRolesTool,
+  createListStickersTool,
+  createListThreadsTool,
   createListWebhooksTool,
   createLoadSkillTool,
   createPinMessageTool,
@@ -55,7 +67,7 @@ async function loadSystemPrompt(): Promise<string> {
 export function createDiscordTool(message: Message, approvalChannel: GuildTextBasedChannel) {
   return tool({
     description:
-      "Manage the Discord server: channels, roles, members, messages, webhooks, and scheduled events. Use for any server administration or Discord-related request.",
+      "Manage the Discord server: channels, roles, members, messages, webhooks, scheduled events, threads, and emojis/stickers. Use for any server administration or Discord-related request.",
     inputSchema: z.object({
       task: z.string().describe("The user's original message, forwarded verbatim"),
     }),
@@ -124,6 +136,21 @@ export function createDiscordTool(message: Message, approvalChannel: GuildTextBa
         create_event: createCreateEventTool(guild, perms),
         edit_event: createEditEventTool(guild, perms),
         delete_event: withApproval(createDeleteEventTool(guild, perms), approvalCtx, (input) => `Delete Event ${input.event_id}`),
+        // Thread tools
+        list_threads: createListThreadsTool(guild, perms),
+        create_thread: createCreateThreadTool(guild, perms),
+        edit_thread: createEditThreadTool(guild, perms),
+        delete_thread: withApproval(createDeleteThreadTool(guild, perms), approvalCtx, (input) => `Delete Thread ${input.thread_id}`),
+        // Emoji tools
+        list_emojis: createListEmojisTool(guild),
+        create_emoji: createCreateEmojiTool(guild, perms),
+        edit_emoji: createEditEmojiTool(guild, perms),
+        delete_emoji: withApproval(createDeleteEmojiTool(guild, perms), approvalCtx, (input) => `Delete Emoji ${input.emoji_id}`),
+        // Sticker tools
+        list_stickers: createListStickersTool(guild),
+        create_sticker: createCreateStickerTool(guild, perms),
+        edit_sticker: createEditStickerTool(guild, perms),
+        delete_sticker: withApproval(createDeleteStickerTool(guild, perms), approvalCtx, (input) => `Delete Sticker ${input.sticker_id}`),
       };
 
       const subagent = new ToolLoopAgent({

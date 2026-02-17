@@ -7,7 +7,7 @@ tools: send_message, delete_message, pin_message, unpin_message, add_reaction, f
 
 <sending>
 - Resolve the channel name to an ID via list_channels before sending.
-- Message content supports Discord markdown: **bold**, *italic*, `code`, ```code blocks```, > quotes.
+- Message content supports Discord markdown — follow the `<discord_markdown>` section in the system prompt for supported syntax.
 - Messages are limited to 2000 characters.
 - Don't embed Discord metadata (thread URLs, internal IDs) in message content.
 </sending>
