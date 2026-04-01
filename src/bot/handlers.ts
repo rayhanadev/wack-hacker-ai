@@ -4,6 +4,8 @@ import { createLordWackusAgent } from "../agents/lord-wackus";
 const EDIT_INTERVAL_MS = 1500;
 const MAX_LENGTH = 2000;
 const CONTEXT_MESSAGE_COUNT = 5;
+/** Maximum age (ms) for a message to be included in context. 30 minutes. */
+const CONTEXT_MAX_AGE_MS = 30 * 60 * 1000;
 
 /** Chance (0-1) that Lord Wackus randomly responds to a message. ~1 in 50. */
 const SHITPOST_CHANCE = 0.02;
@@ -21,15 +23,16 @@ const SHITPOST_BLACKLIST = new Set([
   "809620069751586856",
 ]);
 
-/** Format a single message as an XML element. */
+/** Format a single message as an XML element with timestamp. */
 function formatMessage(m: Message, botMention: RegExp | null, tag = "message"): string {
   const name = m.author.displayName ?? m.author.username;
   const content = botMention ? m.content.replace(botMention, "").trim() : m.content.trim();
+  const timestamp = m.createdAt.toISOString();
   const attachments =
     m.attachments.size > 0
       ? `\n${[...m.attachments.values()].map((a) => `    <attachment name="${a.name}" url="${a.url}" type="${a.contentType ?? "unknown"}" />`).join("\n")}`
       : "";
-  return `  <${tag} author="${name}" bot="${m.author.bot}">${content}${attachments}</${tag}>`;
+  return `  <${tag} author="${name}" bot="${m.author.bot}" timestamp="${timestamp}">${content}${attachments}</${tag}>`;
 }
 
 /** Fetch recent messages and format as XML context. */
@@ -39,7 +42,11 @@ async function buildContext(message: Message): Promise<string> {
     before: message.id,
   });
 
-  const messages = [...recent.values()].reverse().slice(-CONTEXT_MESSAGE_COUNT);
+  const now = Date.now();
+  const messages = [...recent.values()]
+    .reverse()
+    .slice(-CONTEXT_MESSAGE_COUNT)
+    .filter((m) => now - m.createdTimestamp < CONTEXT_MAX_AGE_MS);
 
   const botMention = message.client.user ? new RegExp(`<@!?${message.client.user.id}>`) : null;
 
