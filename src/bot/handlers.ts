@@ -1,18 +1,16 @@
 import type { Collection, Message } from "discord.js";
-import { createAgent } from "../agents/index";
-import { buildPromptWithAttachments, type AttachmentInfo } from "../utils/attachments";
-import { isOrganizer } from "../utils/roles";
+import { createLordWackusAgent } from "../agents/lord-wackus";
 
 const EDIT_INTERVAL_MS = 1500;
 const MAX_LENGTH = 2000;
 const CONTEXT_MESSAGE_COUNT = 5;
 
-const TOOL_LABELS: Record<string, string> = {
-  linear: "Linear",
-  notion: "Notion",
-  discord: "Discord",
-  documentation: "docs",
-};
+/** Chance (0-1) that Lord Wackus randomly responds to a message. */
+const SHITPOST_CHANCE = 0.05;
+/** Minimum delay (ms) before a shitpost response to seem organic. */
+const SHITPOST_DELAY_MIN = 3000;
+/** Maximum delay (ms) before a shitpost response. */
+const SHITPOST_DELAY_MAX = 15000;
 
 /** Format a single message as an XML element. */
 function formatMessage(m: Message, botMention: RegExp | null, tag = "message"): string {
@@ -38,7 +36,6 @@ async function buildContext(message: Message): Promise<string> {
 
   const parts: string[] = [];
 
-  // If the user replied to a specific message, include it as explicit context.
   if (message.reference?.messageId) {
     try {
       const referenced =
@@ -60,115 +57,86 @@ async function buildContext(message: Message): Promise<string> {
   return parts.join("\n");
 }
 
-/** Handle incoming messages. Responds when the bot is mentioned. */
+/** Stream a Lord Wackus response into a Discord message, editing periodically. */
+async function streamResponse(
+  agent: Awaited<ReturnType<typeof createLordWackusAgent>>,
+  prompt: string,
+  sendMessage: (content: string) => Promise<Message>,
+): Promise<void> {
+  const result = await agent.stream({ prompt });
+
+  let text = "";
+  let reply: Message | null = null;
+  let lastEdit = Date.now();
+  let editing = false;
+  let editPromise: Promise<unknown> = Promise.resolve();
+
+  for await (const part of result.fullStream) {
+    if (part.type !== "text-delta") continue;
+    text += part.text;
+
+    const displayText = text.slice(0, MAX_LENGTH);
+
+    if (!reply) {
+      reply = await sendMessage(displayText);
+      lastEdit = Date.now();
+    } else if (Date.now() - lastEdit >= EDIT_INTERVAL_MS && !editing) {
+      editing = true;
+      lastEdit = Date.now();
+      editPromise = reply
+        .edit(displayText)
+        .catch(() => {})
+        .finally(() => {
+          editing = false;
+        });
+    }
+  }
+
+  await editPromise;
+
+  if (reply) {
+    await reply.edit(text.slice(0, MAX_LENGTH) || "...ribbit.");
+  }
+}
+
+/** Randomly interject as Lord Wackus. */
+async function maybeShitpost(message: Message): Promise<void> {
+  if (Math.random() > SHITPOST_CHANCE) return;
+  if (message.channel.isThread()) return;
+
+  const delay =
+    SHITPOST_DELAY_MIN + Math.random() * (SHITPOST_DELAY_MAX - SHITPOST_DELAY_MIN);
+  await new Promise((resolve) => setTimeout(resolve, delay));
+
+  const recentMessages = await buildContext(message);
+  const agent = await createLordWackusAgent(message, recentMessages || undefined, "shitpost");
+
+  await streamResponse(agent, message.content, (content) => {
+    if ("send" in message.channel) return message.channel.send(content);
+    return message.reply(content);
+  });
+}
+
+/** Handle incoming messages. */
 export async function handleMessage(message: Message): Promise<void> {
   if (message.author.bot) return;
 
   const botUser = message.client.user;
-  if (!botUser || !message.mentions.has(botUser)) return;
+  if (!botUser || !message.mentions.has(botUser)) {
+    maybeShitpost(message).catch(console.error);
+    return;
+  }
 
   const prompt = message.content.replace(new RegExp(`<@!?${botUser.id}>`), "").trim();
-  const attachments: AttachmentInfo[] = [...message.attachments.values()].map((a) => ({
-    url: a.url,
-    name: a.name,
-    contentType: a.contentType ?? "application/octet-stream",
-  }));
-  if (!prompt && attachments.length === 0) return;
-
-  const member = message.member ?? (await message.guild?.members.fetch(message.author.id));
-  if (!member) return;
-
-  const organizerMode = isOrganizer(member);
-
-  await message.react("👀");
-
-  const thread = message.channel.isThread()
-    ? message.channel
-    : await message.startThread({
-        name: (prompt || `${attachments.length} attachment(s)`).slice(0, 100),
-      });
+  if (!prompt) return;
 
   try {
     const recentMessages = await buildContext(message);
-    const agent = await createAgent(message, thread, recentMessages || undefined, organizerMode);
-    const promptInput = buildPromptWithAttachments(prompt, attachments);
-    const result = await agent.stream({
-      prompt: promptInput,
-    });
+    const agent = await createLordWackusAgent(message, recentMessages || undefined, "mentioned");
 
-    let text = "";
-    let reply: Message | null = null;
-    let lastEdit = Date.now();
-    let toolCallCount = 0;
-    let needsNewline = false;
-    let statusLine = "";
-    let editing = false;
-    let editPromise: Promise<unknown> = Promise.resolve();
-    const startTime = Date.now();
-
-    for await (const part of result.fullStream) {
-      let shouldUpdate = false;
-
-      if (part.type === "text-delta") {
-        if (needsNewline && text.length > 0) {
-          text += "\n\n";
-          needsNewline = false;
-        }
-        text += part.text;
-        statusLine = "";
-        shouldUpdate = true;
-      } else if (part.type === "tool-call") {
-        toolCallCount++;
-        const label = TOOL_LABELS[part.toolName] ?? part.toolName;
-        statusLine = `\n-# ⏳ Using ${label}…`;
-        shouldUpdate = true;
-      } else if (part.type === "tool-result") {
-        needsNewline = true;
-        statusLine = "";
-        shouldUpdate = true;
-      }
-
-      if (!shouldUpdate) continue;
-
-      const displayText = (text + statusLine).slice(0, MAX_LENGTH);
-
-      if (!reply) {
-        // Must await the first send to get the reply Message object
-        reply = await thread.send(displayText);
-        message.reactions.removeAll().catch(() => {});
-        lastEdit = Date.now();
-      } else if (Date.now() - lastEdit >= EDIT_INTERVAL_MS && !editing) {
-        // Fire edit without blocking stream consumption
-        editing = true;
-        lastEdit = Date.now();
-        editPromise = reply
-          .edit(displayText)
-          .catch(() => {})
-          .finally(() => {
-            editing = false;
-          });
-      }
-    }
-
-    // Wait for any in-flight edit before the final edit
-    await editPromise;
-
-    const durationSec = Math.max(1, Math.round((Date.now() - startTime) / 1000));
-    const toolText =
-      toolCallCount > 0
-        ? ` · used ${toolCallCount} tool${toolCallCount !== 1 ? "s" : ""}`
-        : "";
-    const footer = `\n-# Thought for ${durationSec}s${toolText}`;
-
-    if (reply) {
-      await reply.edit((text + footer).slice(0, MAX_LENGTH) || "No response.");
-    } else {
-      await thread.send("No response.");
-      await message.reactions.removeAll();
-    }
+    await streamResponse(agent, prompt, (content) => message.reply(content));
   } catch (error) {
     const msg = error instanceof Error ? error.message : "An error occurred";
-    await thread.send(`Error: ${msg}`);
-    await message.reactions.removeAll();
+    await message.reply(`Error: ${msg}`);
   }
 }
