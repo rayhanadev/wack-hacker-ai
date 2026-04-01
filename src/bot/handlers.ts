@@ -5,12 +5,21 @@ const EDIT_INTERVAL_MS = 1500;
 const MAX_LENGTH = 2000;
 const CONTEXT_MESSAGE_COUNT = 5;
 
-/** Chance (0-1) that Lord Wackus randomly responds to a message. */
-const SHITPOST_CHANCE = 0.05;
+/** Chance (0-1) that Lord Wackus randomly responds to a message. ~1 in 50. */
+const SHITPOST_CHANCE = 0.02;
 /** Minimum delay (ms) before a shitpost response to seem organic. */
 const SHITPOST_DELAY_MIN = 3000;
 /** Maximum delay (ms) before a shitpost response. */
 const SHITPOST_DELAY_MAX = 15000;
+
+/** Channels where Lord Wackus will not shitpost. */
+const SHITPOST_BLACKLIST = new Set([
+  "1052236377338683514",
+  "904896819165814794",
+  "1105173506242642020",
+  "1285816997636079706",
+  "809620069751586856",
+]);
 
 /** Format a single message as an XML element. */
 function formatMessage(m: Message, botMention: RegExp | null, tag = "message"): string {
@@ -103,6 +112,7 @@ async function streamResponse(
 async function maybeShitpost(message: Message): Promise<void> {
   if (Math.random() > SHITPOST_CHANCE) return;
   if (message.channel.isThread()) return;
+  if (SHITPOST_BLACKLIST.has(message.channel.id)) return;
 
   const delay =
     SHITPOST_DELAY_MIN + Math.random() * (SHITPOST_DELAY_MAX - SHITPOST_DELAY_MIN);
